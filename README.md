@@ -1,6 +1,6 @@
 # ToPar
 ToPar stands for *Tosca Parser* and aims to be a fully compliant and up-to-date Tosca OASIS normative parser 
-(cf [TOSCA Simple Profile in YAML Version 1.2](http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/TOSCA-Simple-Profile-YAML-v1.2.pdf)).
+(cf [TOSCA Simple Profile in YAML Version 1.2](http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.2/TOSCA-Simple-Profile-YAML-v1.2.pdf)).
 
 Currently, ToPar features are limited to syntax validation.
 It is based on an ANTLR 4 grammar. The parser is built using the JavaSCript target.
