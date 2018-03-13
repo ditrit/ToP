@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "chai": "^4.1.2"
+  },
+  "dependencies": {
+    "jasmine-node": "^1.14.5"
+  }
+}

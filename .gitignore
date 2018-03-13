@@ -1,0 +1,5 @@
+*.*~
+*.swp
+archive/
+lib/
+node_modules/

@@ -1,0 +1,7 @@
+tosca_definition_version: tosca_simple_yaml_1_0 # 
+
+metadata:
+  celui_la: la
+  template_author: Xavier Talon
+  template_name:   Un joli nom
+  autre: un autre
