@@ -1,12 +1,16 @@
 # ToPar
-ToPar stands for *Tosca Parser* and aims to be a fully compliant and up-to-date Tosca OASIS normative parser.
+ToPar stands for *Tosca Parser* and aims to be a fully compliant and up-to-date Tosca OASIS normative parser 
+(cf [TOSCA Simple Profile in YAML Version 1.2](http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/TOSCA-Simple-Profile-YAML-v1.2.pdf)).
 
-Topar is based on ANTLR4. Currently, it is built using the JavaSCript target.
+Currently, ToPar features are limited to syntax validation.
+It is based on an ANTLR 4 grammar. The parser is built using the JavaSCript target.
 
 ## Prerequisites
-- antlr4
-- node 
-- jasmine (for tests)
+You need to install :
+- [antlr4](http://www.antlr.org/)
+- [node js](https://nodejs.org/en/) 
+
+[jasmine for node.js](https://jasmine.github.io/2.0/node.html) is used to automate tests.
 
 ## Build and use the parser
 1. Compile the grammar to produce the JavaScript parser :
