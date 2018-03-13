@@ -1,4 +1,4 @@
-app = require("../tc.js");
+app = require("../topar.js");
 
 describe("tosca compiler", function() {
 		

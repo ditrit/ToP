@@ -5,7 +5,6 @@ const ToscaParser = require("./ToscaParser.js")
 const ToscaListener = require("./ToscaListener.js").ToscaListener
 
 const iName = process.argv[2]
-//python3Listener.tFileName = iName.replace(".calc", ".js")
 console.log("Compiling " + iName) 
 
 var input = fs.readFileSync(iName, 'UTF-8')

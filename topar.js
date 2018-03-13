@@ -6,7 +6,7 @@ const ToscaListener = require("./ToscaListener.js").ToscaListener
 
 var exports=module.exports={};
 
-// class for gathering errors and posting them to ACE editor
+// class for gathering errors 
 var AnnotatingErrorListener = function(annotations) {
     antlr4.error.ErrorListener.call(this);
     this.annotations = annotations;
@@ -39,8 +39,6 @@ function parse(filename) {
   parser.addErrorListener(listener);
   
   var tree = parser.file_input()
-//  var extractor = new ToscaListener()
-//  antlr4.tree.ParseTreeWalker.DEFAULT.walk(extractor, tree)
   
   return annotations;
 };

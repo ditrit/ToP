@@ -3,3 +3,7 @@
 archive/
 lib/
 node_modules/
+!Tosca.g4
+Tosca*
+package.json
+
