@@ -25,23 +25,28 @@ AnnotatingErrorListener.prototype.syntaxError = function(recognizer, offendingSy
  });
 };
 
-function parse(filename) {
-  var input = fs.readFileSync(filename, 'UTF-8')
-  var chars = new antlr4.InputStream(input)
-  var lexer = new ToscaLexer.ToscaLexer(chars)
-  var tokens  = new antlr4.CommonTokenStream(lexer)
-  var parser = new ToscaParser.ToscaParser(tokens)
+function parse_file(filename, rule_name='file_input') {
+  let input = fs.readFileSync(filename, 'UTF-8');
+  return parse(input, rule_name);
+}
+
+function parse(input, rule_name='file_input') {
+  var chars = new antlr4.InputStream(input);
+  var lexer = new ToscaLexer.ToscaLexer(chars);
+  var tokens  = new antlr4.CommonTokenStream(lexer);
+  var parser = new ToscaParser.ToscaParser(tokens);
   parser.buildParseTrees = true;
   
   var annotations = [];
-  var listener = new AnnotatingErrorListener(annotations)
+  var listener = new AnnotatingErrorListener(annotations);
   parser.removeErrorListeners();
   parser.addErrorListener(listener);
   
-  var tree = parser.file_input()
+  var tree = parser[rule_name]();
   
   return annotations;
 };
 
 
 exports.parse=parse
+exports.parse_file=parse_file

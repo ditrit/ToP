@@ -462,7 +462,7 @@ metadata
 metadata_clause
  : 'template_name' ':' short_str
  | 'template_author' ':' short_str
- | 'template_version' ':' VERSION
+ | 'template_version' ':' version
  | ID ':' value
  ;
 
@@ -794,7 +794,7 @@ constraints
  ;
 
 constraint_clause
- : 'equal' ':' size
+ : 'equal' ':' value
  | 'greater_than' ':' value 
  | 'greater_or_equal' ':' value 
  | 'less_than' ':' value 
@@ -852,7 +852,7 @@ entity_metadata_clause
  
 entity_clause
  : 'derived_from' ':' ID NEWLINE
- | 'version' ':' VERSION NEWLINE
+ | 'version' ':' version NEWLINE
  | entity_metadata
  | descr
  ;
@@ -1683,12 +1683,12 @@ value
  : size
  | time
  | freq
- | INFINITY
+ | infinity
  | number
- | VERSION
- | NULL
- | NAN
- | TIMESTAMP
+ | version
+ | null_value
+ | nan
+ | timestamp
  | list 
  | map
  | range
@@ -1726,7 +1726,7 @@ short_str
  ;
  
 str
- : short_str NEWLINE
+ : short_str
  | MLPREF alltoken* NEWLINE 
        INDENT 
            sub_mlstring+
@@ -1740,13 +1740,38 @@ sub_mlstring
  
 number
  : integer
- | FLOAT_NUMBER
- | IMAG_NUMBER
+ | real
  ;
 
+/// floatnumber   ::=  pointfloat | exponentfloat
+real
+ : INT_DOT_INT
+ | FLOAT_NUMBER
+ | '0'
+ | INFINITY
+ | NAN
+ | integer
+ ;
+ 
 bool
  : TRUE
  | FALSE
+ ;
+
+null_value
+ : NULL
+ ;
+
+nan
+ : NAN
+ ;
+
+infinity
+ : INFINITY
+ ;
+
+timestamp
+ : TIMESTAMP
  ;
  
 /// integer        ::=  decimalinteger | octinteger | hexinteger | bininteger
@@ -1755,6 +1780,9 @@ integer
  | OCT_INTEGER
  | HEX_INTEGER
  | BIN_INTEGER
+ | '0'
+ | INFINITY
+ | NAN
  ;
 
 size
@@ -1769,6 +1797,10 @@ freq
  : ( DECIMAL_INTEGER | FLOAT_NUMBER ) ('Hz'|'kHz'|'MHz'|'GHz')
  ;
 
+version
+ : INT_DOT_INT ('.' DECIMAL_INTEGER ('.' ID ('-'DECIMAL_INTEGER)?)?)?
+ ;
+ 
 workflow_state: 'initial'|'creating'|'created'|'configuring'|'configured'|'starting'|'started'|'stopping'|'stopped'|'deleting'|'error'|'available';
  
 alltoken
@@ -1810,7 +1842,6 @@ alltoken
  | ERROR
  | AVAILABLE
  | TOSCA_DEFINITION_VERSION
- | VERSION
  | METADATA
  | TEMPLATE_NAME
  | TEMPLATE_AUTHOR
@@ -1920,17 +1951,16 @@ alltoken
  | FALSE
  | ID
  | STRING_LITERAL
+ | FLOAT_NUMBER
  | DECIMAL_INTEGER
  | OCT_INTEGER
  | HEX_INTEGER
  | BIN_INTEGER
- | FLOAT_NUMBER
- | IMAG_NUMBER
  | STAR
  | OPEN_PAREN
  | CLOSE_PAREN
  | COMMA
- | COLON
+ | COLON 
  | SEMI_COLON
  | POWER
  | ASSIGN
@@ -1948,7 +1978,6 @@ alltoken
  | CLOSE_BRACE
  | UNKNOWN_CHAR
  | INFINITY
- | VERSION
  | UNBOUNDED
  | NULL
  | NAN
@@ -2128,7 +2157,7 @@ ASSERT : 'assert';
 OR : 'or';
 AND : 'and';
 NOT : 'not';
-AFTER: 'after';
+AFTER: 'after';                                          
 BEFORE: 'before';
 WAIT_SOURCE: 'wait_source';
 AFTER_SOURCE: 'after_source';
@@ -2139,8 +2168,8 @@ TARGET_WEAVING: 'target_weaving';
 SOURCE_WEAVING: 'source_weaving';
 WORKFLOWS: 'workflows';
 MEMBERS: 'members';
-TRUE : 'True'|'true';
-FALSE : 'False'|'false';
+TRUE : 'True'|'true'|'TRUE';
+FALSE : 'False'|'false'|'FALSE';
 /* <<<<< TOSCA lexer rules */ 
 
 NEWLINE
@@ -2203,11 +2232,29 @@ LITEM
 STRING_LITERAL
  : SHORT_STRING
  ;
- 
-/// decimalinteger ::=  nonzerodigit digit* | "0"+
+
+NAN
+ : '.nan'|'.NaN'|'.NAN'
+ ; 
+
+INFINITY
+ : [+-]? ('.inf'|'.INF'|'.Inf')
+ ;
+
+FLOAT_NUMBER
+ : INT_DOT_INT ([eE] [+-]? DIGIT+ )
+ | [+-] INT_DOT_INT ([eE] [+-]? DIGIT+ )?
+ | [+-]? DIGIT+ '.' ([eE] [+-]? DIGIT+ )?
+ | [+-]? '.' DIGIT+  ([eE] [+-]? DIGIT+ )?
+ ;
+
+INT_DOT_INT
+ : DIGIT+ '.' DIGIT+
+ ;
+
 DECIMAL_INTEGER
  : [+-]? NON_ZERO_DIGIT DIGIT*
- | [+-]? '0'+
+ | '0'+
  ;
 
 /// octinteger     ::=  "0" ("o" | "O") octdigit+
@@ -2223,17 +2270,6 @@ HEX_INTEGER
 /// bininteger     ::=  "0" ("b" | "B") bindigit+
 BIN_INTEGER
  : [+-]? '0' [bB] BIN_DIGIT+
- ;
-
-/// floatnumber   ::=  pointfloat | exponentfloat
-FLOAT_NUMBER
- : [+-]? POINT_FLOAT
- | [+-]? EXPONENT_FLOAT
- ;
-
-/// imagnumber ::=  (floatnumber | intpart) ("j" | "J")
-IMAG_NUMBER
- : ( FLOAT_NUMBER | [+-]? INT_PART ) [jJ]
  ;
 
 MLPREF: [|>][+-]?;
@@ -2263,14 +2299,7 @@ CLOSE_BRACE : '}' {this.opened--;};
 IGNORER
  : ( SPACES | COMMENT | LINE_JOINING ) -> skip
  ;
-
-INFINITY
- : [+-]?'.inf'|'.INF'|'.Inf'
- ;
  
-VERSION
- : DIGIT+'.'DIGIT+('.'DIGIT+('.'[a-zA-Z]+('-'DIGIT+)))?
- ;
  
 UNBOUNDED
  : 'UNBOUNDED'
@@ -2280,9 +2309,6 @@ NULL
  : 'null'|'NULL'|'Null'|'~'
  ;
  
-NAN
- : '.nan'|'.Nan'|'.NAN'
- ; 
  
 TIMESTAMP
  : DIGIT DIGIT DIGIT DIGIT '-' DIGIT DIGIT? '-' DIGIT DIGIT?
@@ -2297,7 +2323,7 @@ TIMESTAMP
 ID
  : ID_START ID_CONTINUE*
  ;
-
+                                                 
 UNKNOWN_CHAR
  : .
  ;
@@ -2343,17 +2369,6 @@ fragment HEX_DIGIT
 /// bindigit       ::=  "0" | "1"
 fragment BIN_DIGIT
  : [01]
- ;
-
-/// pointfloat    ::=  [intpart] fraction | intpart "."
-fragment POINT_FLOAT
- : INT_PART? FRACTION
- | INT_PART '.'
- ;
-
-/// exponentfloat ::=  (intpart | pointfloat) exponent
-fragment EXPONENT_FLOAT
- : ( INT_PART | POINT_FLOAT ) EXPONENT
  ;
 
 /// intpart       ::=  digit+
