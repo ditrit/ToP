@@ -43,7 +43,7 @@ describe("Tosca Parser syntax -> ", function() {
 	it("The compiler should accept complex in_range constraint",
 		function() { expect( app.parse(
 `constraints:
-  - in_range: [ UNBOUNDED, [ 45, - 5, 7 ] ]
+  - in_range: [ UNBOUNDED, 45.56 MHz ]
 `, 'constraints' )).toEqual([]) });	
 
 	it("The compiler should not accept in_range constraint with not range value",
@@ -65,7 +65,7 @@ describe("Tosca Parser syntax -> ", function() {
   - equal: ez -5 GB
   - greater_than: -5.6
   - valid_values: [ 5, 6, 45] 
-  - in_range: [ UNBOUNDED, [ 45, - 5, 7 ] ]
+  - in_range: [ UNBOUNDED, -23.4e3 s ]
 `, 'constraints' )).toEqual([]) });
 	
   });

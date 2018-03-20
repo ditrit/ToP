@@ -182,6 +182,15 @@ tokens { INDENT, DEDENT }
 file_input
  : ( NEWLINE | stmt )* EOF
  ;
+ 
+test
+ : ( NEWLINE | stmp_test )* EOF
+ ;
+
+stmp_test
+ : map
+ | list
+ ;
 
 /// stmt: simple_stmt | compound_stmt
 stmt
@@ -1365,11 +1374,10 @@ capabilities_filter
  ;
 
 capability_filter
- : '-' INDENT ID ':' 
+ : '-' INDENT ID ':' NEWLINE
 	     INDENT
 	       properties_filter
 	     DEDENT
-	   DEDENT
  ; 
  
 declarative_node_workflows
@@ -1576,7 +1584,7 @@ workflow_activities
  : 'activities' ':' '[' workflow_activity (',' workflow_activity )* ']' NEWLINE 
  | 'activities' ':' NEWLINE 
   	INDENT
-  		('-' INDENT workflow_activity DEDENT)+
+  		('-' INDENT workflow_activity NEWLINE DEDENT)+
   	DEDENT;
 
 workflow_activity
@@ -1607,7 +1615,22 @@ imperative_workflow_clause
  | workflow_preconditions
  | workflow_steps
  ;
- 
+
+workflow_state
+ : 'initial'
+ | 'creating'
+ | 'created'
+ | 'configuring'
+ | 'configured'
+ | 'starting'
+ | 'started'
+ | 'stopping'
+ | 'stopped'
+ | 'deleting'
+ | 'error'
+ | 'available'
+ ;
+
 value_expr
  : '{' func_expr '}'
  ;
@@ -1680,15 +1703,9 @@ func_get_artifact
 
 
 value
- : size
- | time
- | freq
- | infinity
- | number
- | version
+ : comparable_value
  | null_value
  | nan
- | timestamp
  | list 
  | map
  | range
@@ -1696,28 +1713,42 @@ value
  | short_str
  ; 
 
+comparable_value
+ : size 
+ | time
+ | freq
+ | infinity
+ | number
+ | timestamp
+ ; 
+
+ 
 descr
  : 'description' ':' str
  ;
  
 list
- : '[' NEWLINE? (value ',' NEWLINE?)* value NEWLINE? ']'
+ : '[' NEWLINE? (value ',' NEWLINE?)+ value NEWLINE? ']'
  | '[' NEWLINE? ']'
- | ('-' INDENT value DEDENT NEWLINE)+
+ | ('-' INDENT value NEWLINE? DEDENT)+
  ;
 
 map
- : '{' NEWLINE? (value_assoc ',' NEWLINE?)* value_assoc NEWLINE? '}'  
+ : '{' NEWLINE? (value_assoc ',' NEWLINE?)+ value_assoc NEWLINE? '}'  
  | '{' NEWLINE? '}' 
- | ( value_assoc NEWLINE) +
+ | ( value_assoc NEWLINE? )+
  ;
 
 value_assoc
  : ID ':' value 
+ | ID ':' NEWLINE
+   INDENT
+     value NEWLINE?
+   DEDENT
  ;
 
 range
- : '[' ( value | UNBOUNDED ) ',' ( value | UNBOUNDED ) ']'
+ : '[' ( version | comparable_value | UNBOUNDED ) ',' ( version | comparable_value | UNBOUNDED ) ']'
  ;
 
 short_str
@@ -1741,6 +1772,11 @@ sub_mlstring
 number
  : integer
  | real
+ ;
+ 
+version
+ : VERSION
+ | INT_DOT_INT
  ;
 
 /// floatnumber   ::=  pointfloat | exponentfloat
@@ -1786,22 +1822,21 @@ integer
  ;
 
 size
- : ( DECIMAL_INTEGER | FLOAT_NUMBER ) ('B'|'kB'|'KiB'|'MB'|'GB'|'GiB'|'TB'|'TiB')
+ : ( integer | real ) 
+ 		(S_B | S_KB | S_KIB | S_MB | S_GB | S_GIB | S_TB | S_TIB )
  ;
 
 time
- : ( DECIMAL_INTEGER | FLOAT_NUMBER ) ('d'|'h'|'m'|'s'|'ms'|'us'|'ns')
+ : ( integer | real ) 
+ 		( T_D | T_H | T_M | T_S | T_MS | T_US | T_NS )
  ;
 
 freq
- : ( DECIMAL_INTEGER | FLOAT_NUMBER ) ('Hz'|'kHz'|'MHz'|'GHz')
+ : ( integer | real ) 
+ 		( F_HZ | F_KHZ | F_MHZ | F_GHZ )
  ;
 
-version
- : INT_DOT_INT ('.' DECIMAL_INTEGER ('.' ID ('-'DECIMAL_INTEGER)?)?)?
- ;
  
-workflow_state: 'initial'|'creating'|'created'|'configuring'|'configured'|'starting'|'started'|'stopping'|'stopped'|'deleting'|'error'|'available';
  
 alltoken
  : TOSCA_SIMPLE_YAML_1_0 
@@ -2015,26 +2050,26 @@ SUPPORTED: 'supported';
 UNSUPPORTED: 'unsupported';
 EXPERIMENTAL: 'experimental';
 DEPRECATED: 'deprecated';
-S_B: 'B';
-S_KB: 'kB';
-S_KIB: 'KiB';
-S_MB: 'MB';
-S_MIB: 'MiB';
-S_GB: 'GB';
-S_GIB: 'GiB';
-S_TB: 'TB';
-S_TIB: 'TiB';
-T_D: 'd';
-T_H: 'h';
-T_M: 'm';
-T_S: 's';
-T_MS: 'ms';
-T_US: 'us';
-T_NS: 'ns';
-F_HZ: 'Hz';
-F_KHZ: 'kHz';
-F_MHZ: 'MHz';
-F_GHZ: 'GHz';
+S_B: [Bb];
+S_KB: [kK][Bb];
+S_KIB: [Kk][iI][Bb];
+S_MB: [Mm][Bb];
+S_MIB: [Mm][iI][Bb];
+S_GB: [Gg][Bb];
+S_GIB: [Gg][iI][Bb];
+S_TB: [Tt][Bb];
+S_TIB: [Tt][iI][Bb];
+T_D: [dD];
+T_H: [hH];
+T_M: [mM];
+T_S: [s];
+T_MS: [mM][sS];
+T_US: [uU][sS];
+T_NS: [nN][sS];
+F_HZ: [Hh][zZ];
+F_KHZ: [kK][Hh][zZ];
+F_MHZ: [Mm][Hh][zZ];
+F_GHZ: [Gg][Hh][zZ];
 INITIAL: 'initial';
 CREATING: 'creating';
 CREATED: 'created';
@@ -2217,8 +2252,10 @@ LITEM
        do {
          idx++;
          carac = this._input.LA(-idx);         
-       } while (carac === 32);
-       if ( carac === ToscaParser.EOF || carac === 13 /* '\r' */ || carac === 10 /* '\n' */ ) {
+       } while (carac === 32 || carac == 45);
+       if ( carac === ToscaParser.EOF || 
+            carac === 13 /* '\r' */ || 
+            carac === 10 /* '\n' */ ) {
          indent = idx - 1
          this.indents.push(indent);
          this.emitToken(this.commonToken(ToscaParser.INDENT, this.text));
@@ -2239,6 +2276,10 @@ NAN
 
 INFINITY
  : [+-]? ('.inf'|'.INF'|'.Inf')
+ ;
+
+VERSION
+ : INT_DOT_INT '.' DECIMAL_INTEGER ('.' ID ('-'DECIMAL_INTEGER)?)?
  ;
 
 FLOAT_NUMBER
