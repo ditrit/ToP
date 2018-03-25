@@ -110,26 +110,10 @@ tokens { INDENT, DEDENT }
     return new CommonToken(this._tokenFactorySourcePair, type, antlr4.Lexer.DEFAULT_TOKEN_CHANNEL, start, stop);
   }
 
-  // Calculates the indentation of the provided spaces, taking the
-  // following rules into account:
-  //
-  // "Tabs are replaced (from left to right) by one to eight spaces
-  //  such that the total number of characters up to and including
-  //  the replacement is a multiple of eight [...]"
-  //
-  //  -- https://docs.python.org/3.1/reference/lexical_analysis.html#indentation
   ToscaLexer.prototype.getIndentationCount = function(whitespace) {
-    let count = 0;
-    for (let i = 0; i < whitespace.length; i++) {
-      if (whitespace[i] === '\t') {
-        count += 8 - count % 8;
-      } else {
-        count++;
-      }
-    }
-    return count;
+    return whitespace.length
   }
-
+  
   ToscaLexer.prototype.atStartOfInput = function() {
     return this.getCharIndex() === 0;
   }
@@ -146,7 +130,7 @@ tokens { INDENT, DEDENT }
     this.thisparser = thisparser;
     
     return this;
-    }
+    };
 
     add(clause) {
           let clauseToken = clause.start.text; 
@@ -159,8 +143,8 @@ tokens { INDENT, DEDENT }
 
     setMandatory(mandatory) {
           this.mandatory = mandatory; 
-    };
-	    
+    }
+
     check() {
           for (let item of this.mandatory) 
      	    if (!(item in this.items)) 
@@ -170,15 +154,27 @@ tokens { INDENT, DEDENT }
      	      this.thisparser.notifyErrorListeners("The clause '" + i + "' is duplicated in entity '" + this.label + "'"); 
     };
     
+  };
+
+  function isString(s) {
+    return typeof(s) === 'string' || s instanceof String;
   }
-  
+
+   function isArray(a) {
+    return a instanceof Array;
+  }
+
+   function isRegexp(r) {
+    return ((r instanceof RegExp) || isString(r));
+  }
+
 }
+
 
 /*
  * parser rules
  */
 
-/// file_input: (NEWLINE | stmt)* ENDMARKER
 file_input
  : ( NEWLINE | stmt )* EOF
  ;
@@ -190,26 +186,33 @@ test
 stmp_test
  : map
  | list
+ | namespace
+ | descr
+ | properties
  ;
 
-/// stmt: simple_stmt | compound_stmt
 stmt
  : workflow_source_weavings
- | tosca_definition_version
+ | tosca_definitions_version
+ | namespace
  | metadata
  | repositories
  | constraints
  ;
 
+descr
+ : 'description:' str NEWLINE?
+ ;
+
 service_template
- :  { let u = new UnorderedClauses(this); u.label = 'service template'; 
-      u.mandatory = [ 'tosca_definition_version' ] }
-    ( service_template_clause {u.add($service_template_clause.ctx)} )+
-	  { u.check(); }
+ : tosca_definitions_version
+   { let u = new UnorderedClauses(this); u.label = 'service template';}
+   ( service_template_clause {u.add($service_template_clause.ctx)} )+
+   { u.check(); }
  ;
  
 service_template_clause
- : tosca_definition_version
+ : namespace
  | metadata
  | repositories
  | file_imports
@@ -453,11 +456,18 @@ relationship_template_clause
  | 'copy:' ID NEWLINE
  ;
  
-tosca_definition_version
- : 'tosca_definition_version:' 
-   ( 'tosca_simple_yaml_1_0' | 'tosca_simple_yaml_1_1' )
+tosca_definitions_version
+ : 'tosca_definitions_version:' URI
+   {  'http://docs.oasis-open.org/tosca/ns/simple/yaml/1.2' == $URI.text }?
+ | 'tosca_definitions_version:' ID
+   { 'tosca_simple_yaml_1_2' == $ID.text }?
  ;
 
+namespace
+ : 'namespace:' URI
+ ;
+
+ 
 metadata
  : 'metadata:' NEWLINE
      { let u = new UnorderedClauses(this);
@@ -610,7 +620,7 @@ properties
 property
  : ID ':' NEWLINE 
      { let u = new UnorderedClauses(this);
-       u.mandatory = ['type']; u.label = $ID.text; }
+       u.mandatory = ['type:']; u.label = $ID.text; }
  	 INDENT
  	   (property_clause {u.add($property_clause.ctx) } )+
  	 DEDENT
@@ -619,12 +629,15 @@ property
 
 property_clause
  : 'type:' (ID | BASETYPE_NAMES )  NEWLINE               
- | descr        
+ | descr  
  | constraints 					        
  | 'required:' bool  NEWLINE         
- | 'default:' value  NEWLINE         
- | 'status:' ('supported' | 'unsupported' | 'experimental' | 'deprecated')
+ | 'default:' value  NEWLINE?         
+ | 'status:' ID NEWLINE
+       { ['supported', 'unsupported', 'experimental', 'deprecated'].includes($ID.text) }?
  | entry_decl
+// | 'external-schema:' str NEWLINE? a priori erreur dans le doc : le schema est defini en contrainte
+ | entity_metadata
  ;
 
 property_assignments
@@ -675,8 +688,9 @@ attribute
 attribute_clause
  : 'type:' (ID | BASETYPE_NAMES )  NEWLINE               
  | descr        
- | 'default:' value  NEWLINE         
- | 'status:' ('supported' | 'unsupported' | 'experimental' | 'deprecated')
+ | 'default:' value  NEWLINE?    
+ | 'status:' ID NEWLINE
+       { ['supported', 'unsupported', 'experimental', 'deprecated'].includes($ID.text) }?
  | entry_decl
  ;
 
@@ -761,8 +775,9 @@ input_parameter_clause
  | descr        
  | constraints 					        
  | 'required:' bool  NEWLINE         
- | 'default:' value  NEWLINE         
- | 'status:' ('supported' | 'unsupported' | 'experimental' | 'deprecated')
+ | 'default:' value  NEWLINE?         
+ | 'status:' ID NEWLINE
+       { ['supported', 'unsupported', 'experimental', 'deprecated'].includes($ID.text) }?
  | entry_decl
  | 'value:' value
  ;
@@ -789,8 +804,9 @@ output_parameter_clause
  | descr        
  | constraints 					        
  | 'required:' bool  NEWLINE         
- | 'default:' value  NEWLINE         
- | 'status:' ('supported' | 'unsupported' | 'experimental' | 'deprecated')
+ | 'default:' value  NEWLINE?
+ | 'status:' ID NEWLINE
+       { ['supported', 'unsupported', 'experimental', 'deprecated'].includes($ID.text) }?
  | entry_decl
  | 'value:' ( value | value_expr )
  ;
@@ -803,17 +819,18 @@ constraints
  ;
 
 constraint_clause
- : 'equal:' value
- | 'greater_than:' value 
- | 'greater_or_equal:' value 
- | 'less_than:' value 
- | 'less_or_equal:' value 
- | 'in_range:' range 
- | 'valid_values:' list 
- | 'length:' value 
- | 'min_length:' value
- | 'max_length:' value 
- | 'pattern:' value
+ : 'equal:'            value
+ | 'greater_than:'     comparable_value 
+ | 'greater_or_equal:' comparable_value 
+ | 'less_than:'        comparable_value 
+ | 'less_or_equal:'    comparable_value 
+ | 'in_range:'         range 
+ | 'valid_values:'     list 
+ | 'length:'           ( str | list | map ) 
+ | 'min_length:'       ( str | list | map )
+ | 'max_length:'       ( str | list | map )
+ | 'pattern:'          str
+ | 'schema:'           str
  ;
 
 entry_decl
@@ -1617,18 +1634,11 @@ imperative_workflow_clause
  ;
 
 workflow_state
- : 'initial'
- | 'creating'
- | 'created'
- | 'configuring'
- | 'configured'
- | 'starting'
- | 'started'
- | 'stopping'
- | 'stopped'
- | 'deleting'
- | 'error'
- | 'available'
+ : ID
+       { [ 'initial', 'creating', 'created', 'configuring', 'configured',
+             'starting', 'started', 'stopping', 'deleting', 
+             'error' ].inludes($ID.text) }? 
+             // 'stopped' et 'available' plus presents en 1.2
  ;
 
 value_expr
@@ -1720,23 +1730,26 @@ comparable_value
  | infinity
  | number
  | timestamp
+ | version
  ; 
-
  
-descr
- : 'description:' str
- ;
  
 list
  : '[' NEWLINE? (value ',' NEWLINE?)+ value NEWLINE? ']'
  | '[' NEWLINE? ']'
  | ('-' INDENT value NEWLINE? DEDENT)+
+ | NEWLINE INDENT
+      ('-' INDENT value NEWLINE? DEDENT)+
+   DEDENT
  ;
 
 map
  : '{' NEWLINE? (value_assoc ',' NEWLINE?)+ value_assoc NEWLINE? '}'  
  | '{' NEWLINE? '}' 
  | ( value_assoc NEWLINE? )+
+ | NEWLINE INDENT
+     ( value_assoc NEWLINE? )+
+   DEDENT
  ;
 
 value_assoc
@@ -1748,7 +1761,15 @@ value_assoc
  ;
 
 range
- : '[' ( version | comparable_value | UNBOUNDED ) ',' ( version | comparable_value | UNBOUNDED ) ']'
+ : '[' size ',' size ']'
+ | '[' time ',' time ']'
+ | '[' freq ',' freq ']'
+ | '[' ( number | infinity) ',' ( number | infinity) ']'
+ | '[' timestamp ',' timestamp ']'
+ | '[' version ',' version ']'
+ | '[' UNBOUNDED ',' UNBOUNDED ']'
+ | '[' comparable_value ',' UNBOUNDED ']'
+ | '[' UNBOUNDED ',' comparable_value ']'
  ;
 
 short_str
@@ -1759,9 +1780,9 @@ short_str
 str
  : short_str
  | MLPREF alltoken* NEWLINE 
-       INDENT 
+       (INDENT 
            sub_mlstring+
-       DEDENT 
+       DEDENT)? 
  ;
 
 sub_mlstring
@@ -1779,7 +1800,6 @@ version
  | INT_DOT_INT
  ;
 
-/// floatnumber   ::=  pointfloat | exponentfloat
 real
  : INT_DOT_INT
  | FLOAT_NUMBER
@@ -1810,7 +1830,6 @@ timestamp
  : TIMESTAMP
  ;
  
-/// integer        ::=  decimalinteger | octinteger | hexinteger | bininteger
 integer
  : DECIMAL_INTEGER
  | OCT_INTEGER
@@ -1822,61 +1841,22 @@ integer
  ;
 
 size
- : ( integer | real ) 
- 		(S_B | S_KB | S_KIB | S_MB | S_GB | S_GIB | S_TB | S_TIB )
- ;
+ : SCALAR_SIZE
+ 	 ;
 
 time
- : ( integer | real ) 
- 		( T_D | T_H | T_M | T_S | T_MS | T_US | T_NS )
+ : SCALAR_TIME
  ;
 
 freq
- : ( integer | real ) 
- 		( F_HZ | F_KHZ | F_MHZ | F_GHZ )
+ : SCALAR_FREQ
  ;
 
- 
- 
 alltoken
- : TOSCA_SIMPLE_YAML_1_0 
- | TOSCA_SIMPLE_YAML_1_1
- | SUPPORTED
- | UNSUPPORTED
- | EXPERIMENTAL
- | DEPRECATED
- | S_B
- | S_KB
- | S_KIB
- | S_MB
- | S_GB
- | S_GIB
- | S_TB
- | S_TIB
- | T_D
- | T_H
- | T_M
- | T_S
- | T_MS
- | T_US
- | T_NS
- | F_HZ
- | F_KHZ
- | F_MHZ
- | F_GHZ
- | INITIAL
- | CREATING
- | CREATED
- | CONFIGURING
- | CONFIGURED
- | STARTING
- | STARTED
- | STOPPING
- | STOPPED
- | DELETING
- | ERROR
- | AVAILABLE
- | TOSCA_DEFINITION_VERSION
+ : SCALAR_SIZE
+ | SCALAR_TIME
+ | SCALAR_FREQ
+ | TOSCA_DEFINITIONS_VERSION
  | METADATA
  | TEMPLATE_NAME
  | TEMPLATE_AUTHOR
@@ -1970,7 +1950,6 @@ alltoken
  | ASSERT
  | OR
  | AND
- | NOT
  | AFTER
  | BEFORE
  | WAIT_SOURCE
@@ -2038,6 +2017,7 @@ alltoken
  | PRECONDITIONS
  | STEPS
  | JOIN
+ | NAMESPACE
  ;
 
 BASETYPE_NAMES
@@ -2063,45 +2043,7 @@ BASETYPE_NAMES
  * lexer rules
  */
 
-TOSCA_SIMPLE_YAML_1_0: 'tosca_simple_yaml_1_0'; 
-TOSCA_SIMPLE_YAML_1_1: 'tosca_simple_yaml_1_1';
-SUPPORTED: 'supported';
-UNSUPPORTED: 'unsupported';
-EXPERIMENTAL: 'experimental';
-DEPRECATED: 'deprecated';
-S_B: [Bb];
-S_KB: [kK][Bb];
-S_KIB: [Kk][iI][Bb];
-S_MB: [Mm][Bb];
-S_MIB: [Mm][iI][Bb];
-S_GB: [Gg][Bb];
-S_GIB: [Gg][iI][Bb];
-S_TB: [Tt][Bb];
-S_TIB: [Tt][iI][Bb];
-T_D: [dD];
-T_H: [hH];
-T_M: [mM];
-T_S: [s];
-T_MS: [mM][sS];
-T_US: [uU][sS];
-T_NS: [nN][sS];
-F_HZ: [Hh][zZ];
-F_KHZ: [kK][Hh][zZ];
-F_MHZ: [Mm][Hh][zZ];
-F_GHZ: [Gg][Hh][zZ];
-INITIAL: 'initial';
-CREATING: 'creating';
-CREATED: 'created';
-CONFIGURING: 'configuring';
-CONFIGURED: 'configured';
-STARTING: 'starting';
-STARTED: 'started';
-STOPPING: 'stopping';
-STOPPED: 'stopped';
-DELETING: 'deleting';
-ERROR: 'error';
-AVAILABLE: 'available';
-/* keywords */
+/* basetypes */
 STRING: 'string';
 BOOLEAN: 'boolean';
 LIST: 'list';
@@ -2116,6 +2058,7 @@ LTIME: 'time';
 SCALAR_UNIT_FREQUENCY: 'scalar-unit.frequency';
 LFREQUENCY: 'frequency';
 
+/* keywords */
 ACTION: 'action';
 ACTIVITY: 'activity:';
 ACTIVITIES: 'activities:';
@@ -2182,6 +2125,7 @@ METHOD: 'method:';
 MIME_TYPE: 'mime_type:';
 MIN_LENGTH: 'min_length:';
 NAME: 'name:';
+NAMESPACE: 'namespace';
 NAMESPACE_PREFIX: 'namespace_prefix:';
 NAMESPACE_URI: 'namespace_uri:';
 NODE: 'node:';
@@ -2225,7 +2169,7 @@ TEMPLATE_VERSION: 'template_version:';
 TOKEN: 'token:';
 TOKEN_TYPE: 'token_type:';
 TOPOLOGY_TYPES: 'topology_template:';
-TOSCA_DEFINITION_VERSION: 'tosca_definition_version:';
+TOSCA_DEFINITIONS_VERSION: 'tosca_definitions_version:';
 TRIGGERS: 'triggers:';
 TYPE: 'type:';
 URL: 'url:';
@@ -2239,8 +2183,6 @@ WAIT_SOURCE: 'wait_source:';
 WAIT_TARGET: 'wait_target:';
 WORKFLOWS: 'workflows:';
 
-
-NOT : 'not';
 
 
 K_SELF: 'SELF';
@@ -2311,6 +2253,23 @@ LITEM
      }
  ;
 
+SCALAR_SIZE 
+ : (INT_DOT_INT | FLOAT_NUMBER | '0' | DECIMAL_INTEGER) 
+   SPACES* 
+   ([Bb]|[kK][Bb]|[Kk][iI][Bb]|[Mm][Bb]|[Mm][iI][Bb]|[Gg][Bb]|[Gg][iI][Bb]|[Tt][Bb]|[Tt][iI][Bb])
+ ;
+
+SCALAR_TIME 
+ : (INT_DOT_INT | FLOAT_NUMBER | '0' | DECIMAL_INTEGER) 
+   SPACES* 
+   ([dD]|[hH]|[mM]|[s]|[mM][sS]|[uU][sS]|[nN][sS])
+ ;
+
+SCALAR_FREQ
+ : (INT_DOT_INT | FLOAT_NUMBER | '0' | DECIMAL_INTEGER) 
+   SPACES* 
+   ([Hh][zZ]|[kK][Hh][zZ]|[Mm][Hh][zZ]|[Gg][Hh][zZ])
+ ;  
  
 /// stringliteral   ::=  [stringprefix](shortstring | longstring)
 /// stringprefix    ::=  "r" | "R"
@@ -2406,7 +2365,9 @@ TIMESTAMP
  ; 
 
 
- 
+URI
+ : SCHEME '://' ( URI_STR ':' URI_STR '@')? (URI_STR | IP) (':' DIGIT (DIGIT (DIGIT DIGIT?)?)?)? ('/' (URI_STR ('/' URI_STR)*'/'?)?)?
+ ;
  
 /// identifier   ::=  id_start id_continue*
 ID
@@ -2416,25 +2377,28 @@ ID
 UNKNOWN_CHAR
  : .
  ;
-
  
 /*
  * fragments
  */
 
-/// shortstring     ::=  "'" shortstringitem* "'" | '"' shortstringitem* '"'
-/// shortstringitem ::=  shortstringchar | stringescapeseq
-/// shortstringchar ::=  <any source character except "\" or newline or the quote>
+fragment SCHEME
+ : 'http'|'https'|'file'
+ ;
+ 
 fragment SHORT_STRING
- : '\'' ( STRING_ESCAPE_SEQ | ~[\\\r\n'] )* '\''
- | '"' ( STRING_ESCAPE_SEQ | ~[\\\r\n"] )* '"'
+ : '\'' ( STRING_ESCAPE_SEQ | ~[\\'] )* '\''
+ | '"' ( STRING_ESCAPE_SEQ | ~[\\"] )* '"'
  ;
 
-/// stringescapeseq ::=  "\" <any source character>
 fragment STRING_ESCAPE_SEQ
  : '\\' .
  ;
 
+fragment IP
+ : DIGIT (DIGIT DIGIT?)? '.' DIGIT (DIGIT DIGIT?)? '.' DIGIT (DIGIT DIGIT?)? '.' DIGIT (DIGIT DIGIT?)?
+ ;
+ 
 /// nonzerodigit   ::=  "1"..."9"
 fragment NON_ZERO_DIGIT
  : [1-9]
@@ -2487,6 +2451,14 @@ fragment LINE_JOINING
  : '\\' SPACES? ( '\r'? '\n' | '\r' )
  ;
 
+fragment URI_NAME
+ : ([a-zA-Z~0-9] | ('%' HEX_DIGIT)) ([a-zA-Z0-9-] | ('%' HEX_DIGIT))*
+ ;
+ 
+fragment URI_STR
+ : URI_NAME ('.' URI_NAME)*
+ ;
+ 
 /// id_start     ::=  <all characters in general categories Lu, Ll, Lt, Lm, Lo, Nl, the underscore, and characters with the Other_ID_Start property>
 fragment ID_START
  : '_'

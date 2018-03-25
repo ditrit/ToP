@@ -50,13 +50,13 @@ describe("Tosca Parser syntax -> ", function() {
 		function() { expect( app.parse(
 `constraints:
   - in_range: 3
-`, 'constraints' )[0].text).toContain("missing '['") });	
+`, 'constraints' )[0].text).toContain("mismatched input '3'") });	
 
 	it("The compiler should not accept none existing constraint",
 		function() { expect( app.parse(
 `constraints:
-  - into_range: [ 3, UNBOUNDED ]
-`, 'constraints' )[0].text).toContain("mismatched input 'into_range'") });	
+  - more_than: 21 
+`, 'constraints' )[0].text).toContain("mismatched input") });
 	
 	it("The compiler should accept complex constraints",
 		function() { expect( app.parse(

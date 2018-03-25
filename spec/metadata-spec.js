@@ -6,7 +6,7 @@ describe("Tosca Compiler syntax -> ", function() {
 
 	it("The compiler should accept simple metadata",
 		function() { expect( app.parse(
-`tosca_definition_version: tosca_simple_yaml_1_0 # de
+`tosca_definitions_version: tosca_simple_yaml_1_2 # de
 
 metadata:
   template_author: Xavier Talon
@@ -15,7 +15,7 @@ metadata:
 
 	it("The compiler should accept metadata with additional keys",
 		function() { expect( app.parse(
-`tosca_definition_version: tosca_simple_yaml_1_0 # 
+`tosca_definitions_version: tosca_simple_yaml_1_2 # 
 
 metadata:
   celui_la: la
@@ -26,7 +26,7 @@ metadata:
 
 	it("The compiler should reject metadata with duplicated keys",
 		function() { expect( app.parse(
-`tosca_definition_version: tosca_simple_yaml_1_0 # 
+`tosca_definitions_version: tosca_simple_yaml_1_2 # 
 
 metadata:
   template_author: Xavier Talon
@@ -34,6 +34,14 @@ metadata:
   template_author: Jean Talon LU
 `				)[0].text ).toContain("duplicated") });
 
+	it("The compiler should accept example of the normative doc",
+		function() { expect( app.parse(
+`tosca_definitions_version: tosca_simple_yaml_1_2 # 
+
+metadata:
+  foo1: bar1
+  foo2: bar2
+`				)).toEqual([]) });
   });
 
 });

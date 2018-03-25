@@ -273,12 +273,6 @@ describe("Tosca Compiler syntax -> ", function() {
        cela
    en fait
 `, 'str')).toEqual([]) });
-
-  	it("The parser should not accept bad indent in multiline strings",
-		function() { expect( app.parse(
-`>+ je suis très 
-'content'
-`,'str')[0].text).toContain("missing INDENT") });
 	
 	});
 
@@ -287,7 +281,7 @@ describe("Tosca Compiler syntax -> ", function() {
       describe("size ", function() {
 
   	  it("The parser should accept '10 GB' as size ",
-		  function() { expect( app.parse(`10 GB`, 'size')).toEqual([]) });
+		  function() { expect( app.parse(`-10 GB`, 'size')).toEqual([]) });
 
   	  it("The parser should accept be case insensitive ",
 		  function() { expect( app.parse(`3.4 gIb`, 'size')).toEqual([]) });
@@ -320,7 +314,7 @@ describe("Tosca Compiler syntax -> ", function() {
 
   	  it("The parser should not accept bad unit ",
 		  function() { expect( 
-		  	app.parse(`-4 Hours`, 
+		  	app.parse(`-4 plouf`, 
 		  			  'time')[0].text).toContain("mismatched input") });
 
   	  it("The parser should not accept a none scalar value ",
@@ -381,18 +375,24 @@ describe("Tosca Compiler syntax -> ", function() {
   	it("The parser should accept unbounded to unbounded range ",
 		function() { expect( app.parse(`[UNBOUNDED, UNBOUNDED]`, 'range')).toEqual([]) });
 
-  	it("The parser should accept empty list as range ",
-		function() { expect( app.parse(`[]`, 'range')[0].text).toContain("mismatched input") });
+  	it("The parser should not accept empty list as range ",
+		function() { expect( app.parse(`[ ]`, 'range')[0].text).toContain("no viable alternative at input '[]'") });
 
-  	it("The parser should accept list of more than 2 items as range ",
+  	it("The parser should not accept list of more than 2 items as range ",
 		function() { expect( app.parse(`[1, 2, 3]`, 'range')[0].text).toContain("mismatched input") });
 
-  	it("The parser should accept list of 1 item as range ",
-		function() { expect( app.parse(`[ 1 ]`, 'range')[0].text).toContain("mismatched input") });
+  	it("The parser should not accept list of 1 item as range ",
+		function() { expect( app.parse(`[ 1 ]`, 'range')[0].text).toContain("no viable alternative at input '[1]'") });
 
-  	it("The parser should accept range of none comparable values",
-		function() { expect( app.parse(`[ True, False ]`, 'range')[0].text).toContain("mismatched input") });
-	
+  	it("The parser should not accept range of none comparable values",
+		function() { expect( app.parse(`[ True, False ]`, 'range')[0].text).toContain("no viable alternative at input") });
+
+  	it("The parser should accept range of compatible types",
+		function() { expect( app.parse(`[ 1.0, 3 ]`, 'range')).toEqual([]) });
+
+  	it("The parser should not accept range of imcompatible types",
+		function() { expect( app.parse(`[ 1.0.0, 3 ]`, 'range')[0].text).toContain("no viable alternative at input") });
+
     });
 
     describe("list ", function() {
