@@ -2,11 +2,11 @@ app = require("../topar.js");
 
 describe("Tosca Compiler syntax -> ", function() {
 	
-  describe("properties : ", function() {
+  describe("inputs : ", function() {
 
 	it("The compiler should accept example of the normative doc",
 		function() { expect( app.parse(`
-properties:
+inputs:
   num_cpus:
     type: integer
     description: Number of CPUs requested for a software node instance.
@@ -18,7 +18,7 @@ properties:
 
 	it("The compiler should property with no description",
 		function() { expect( app.parse(`
-properties:
+inputs:
   names:
     type: list
     entry_schema: string 
@@ -26,7 +26,7 @@ properties:
 
 	it("The compiler should accept property with entry_schema",
 		function() { expect( app.parse(`
-properties:
+inputs:
   names:
     type: list
     entry_schema: string
@@ -36,7 +36,7 @@ properties:
 
 	it("The compiler should accept property with list but no entry_schema",
 		function() { expect( app.parse(`
-properties:
+inputs:
   names:
       type: list
       description: Actual number of CPUs allocated to the node instance """))
@@ -44,7 +44,7 @@ properties:
 
 	it("The compiler should accept property with metadata",
 		function() { expect( app.parse(`
-properties:
+inputs:
   names:
       type: list
       metadata:
@@ -55,7 +55,7 @@ properties:
 	
 	it("The compiler should accept property with default",
 		function() { expect( app.parse(`
-properties:
+inputs:
   actual_cpus:
     type: integer
     default: 4
@@ -65,7 +65,7 @@ properties:
 
 	it("The compiler should accept property with constraints",
 		function() { expect( app.parse(`
-properties:
+inputs:
   actual_cpus:
     type: integer
     description: Number of CPUs requested for a software node instance
@@ -77,7 +77,7 @@ properties:
 
 	it("The compiler should accept a property with a correct status",
 		function() { expect( app.parse(`
-properties:
+inputs:
   names:
     type: list
     entry_schema: string
@@ -87,7 +87,7 @@ properties:
 
 	it("The compiler should accept property of type list with constraints",
 		function() { expect( app.parse(`
-properties:
+inputs:
   list1:
     type: list
     constraints:
@@ -109,7 +109,7 @@ properties:
 
 	it("The compiler should accept a property with complex type, status, default value and constraint",
 		function() { expect( app.parse(`
-properties:
+inputs:
   list_of_names:
     type: list
     default:
@@ -129,7 +129,7 @@ properties:
 
 	it("The compiler should not accept a property with bad status",
 		function() { expect( app.parse(`
-properties:
+inputs:
   list_of_names:
       type: list
       entry_schema: string
@@ -137,9 +137,9 @@ properties:
       description: A list of names
 `, 'test' )[0].text).toContain("failed predicate") });
 
-	it("The compiler should accept multiple properties",
+	it("The compiler should accept multiple inputs",
 		function() { expect( app.parse(`
-properties:
+inputs:
     names:
       type: list
       entry_schema: string
@@ -152,9 +152,9 @@ properties:
 `, 'test' )).toEqual([]) });
 
 
-	it("The compiler should accept multiple complex properties",
+	it("The compiler should accept multiple complex inputs",
 		function() { expect( app.parse(`
-properties:
+inputs:
     names:
       type: list
       entry_schema: string
@@ -206,7 +206,7 @@ properties:
 
 	it("The compiler should accept property with multi-level complex type and default ",
 		function() { expect( app.parse(`
-properties:
+inputs:
   complexcollection:
     type: list
     entry_schema:
@@ -236,7 +236,7 @@ properties:
 
 	it("The compiler should accept property with a json schema constraint ",
 		function() { expect( app.parse(`
-properties:
+inputs:
   event_object:
     type: json
     constraints:
@@ -265,7 +265,7 @@ properties:
 
 	it("The compiler should accept property with a xml schema constraint ",
 		function() { expect( app.parse(`
-properties:
+inputs:
   event_object:
     type: xml
     constraints:

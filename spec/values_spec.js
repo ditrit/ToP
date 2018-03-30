@@ -272,6 +272,7 @@ describe("Tosca Compiler syntax -> ", function() {
      de tout
        cela
    en fait
+ 
 `, 'str')).toEqual([]) });
 	
 	});

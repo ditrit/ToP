@@ -2,60 +2,55 @@ app = require("../topar.js");
 
 describe("Tosca Compiler syntax -> ", function() {
 	
-  describe("properties : ", function() {
+  describe("attributes : ", function() {
 
 	it("The compiler should accept example of the normative doc",
 		function() { expect( app.parse(`
-properties:
-  num_cpus:
+attributes:
+  actual_cpus:
     type: integer
     description: Number of CPUs requested for a software node instance.
-    default: 1
-    required: true
-    constraints:
-      - valid_values: [ 1, 2, 4, 8 ]
 `, 'test' )).toEqual([]) });
 
-	it("The compiler should property with no description",
+	it("The compiler should attribute with no description",
 		function() { expect( app.parse(`
-properties:
+attributes:
   names:
     type: list
     entry_schema: string 
 `, 'test' )).toEqual([]) });
 
-	it("The compiler should accept property with entry_schema",
+	it("The compiler should accept attribute with entry_schema",
 		function() { expect( app.parse(`
-properties:
+attributes:
   names:
     type: list
     entry_schema: string
-    required: false
     description: A list of names 
 `, 'test' )).toEqual([]) });
 
-	it("The compiler should accept property with list but no entry_schema",
+	it("The compiler should accept attribute with list but no entry_schema",
 		function() { expect( app.parse(`
-properties:
+attributes:
   names:
       type: list
       description: Actual number of CPUs allocated to the node instance """))
 `, 'test' )).toEqual([]) });
 
-	it("The compiler should accept property with metadata",
+	it("The compiler should not accept attribute with metadata",
 		function() { expect( app.parse(`
-properties:
+attributes:
   names:
       type: list
-      metadata:
-        un: deux
+      description: Actual number of CPUs allocated to the node instance
+      metadata: 
+        un:    deux
         trois: quatre
-      description: Actual number of CPUs allocated to the node instance """))
-`, 'test' )).toEqual([]) });
+`, 'test' )[0].text).toContain("extraneous input 'metadata:'") });
 	
-	it("The compiler should accept property with default",
+	it("The compiler should accept attribute with default",
 		function() { expect( app.parse(`
-properties:
+attributes:
   actual_cpus:
     type: integer
     default: 4
@@ -63,21 +58,20 @@ properties:
 `, 'test' )).toEqual([]) });
 
 
-	it("The compiler should accept property with constraints",
+	it("The compiler should not accept attribute with constraints",
 		function() { expect( app.parse(`
-properties:
+attributes:
   actual_cpus:
     type: integer
     description: Number of CPUs requested for a software node instance
     default: 1
-    required: true
     constraints:
-      - valid_values: [1,2,4,8]
-`, 'test' )).toEqual([]) });
+      - equal: 1
+`, 'test' )[0].text).toContain("extraneous input 'constraints:'") });
 
-	it("The compiler should accept a property with a correct status",
+	it("The compiler should accept a attribute with a correct status",
 		function() { expect( app.parse(`
-properties:
+attributes:
   names:
     type: list
     entry_schema: string
@@ -85,13 +79,11 @@ properties:
     description: A list of names 
 `, 'test' )).toEqual([]) });
 
-	it("The compiler should accept property of type list with constraints",
+	it("The compiler should accept attribute of type 'list with constraints'",
 		function() { expect( app.parse(`
-properties:
+attributes:
   list1:
     type: list
-    constraints:
-      - min_length: 2
     entry_schema:
       type: integer
       description: tagada
@@ -103,20 +95,17 @@ properties:
       - 2
       - 3
       - 4
-    required: true
     description: Number of CPUs requested for a software node instance
 `, 'test' )).toEqual([]) });
 
-	it("The compiler should accept a property with complex type, status, default value and constraint",
+	it("The compiler should accept a attribute with complex type, status and default value",
 		function() { expect( app.parse(`
-properties:
+attributes:
   list_of_names:
     type: list
     default:
       - tagada
       - tsointsoin
-    constraints:
-      - length: 2
     description: A list of names
     entry_schema:
       type: string
@@ -127,9 +116,9 @@ properties:
     status: experimental
 `, 'test' )).toEqual([]) });
 
-	it("The compiler should not accept a property with bad status",
+	it("The compiler should not accept a attribute with bad status",
 		function() { expect( app.parse(`
-properties:
+attributes:
   list_of_names:
       type: list
       entry_schema: string
@@ -137,41 +126,34 @@ properties:
       description: A list of names
 `, 'test' )[0].text).toContain("failed predicate") });
 
-	it("The compiler should accept multiple properties",
+	it("The compiler should accept multiple attributes",
 		function() { expect( app.parse(`
-properties:
+attributes:
     names:
       type: list
       entry_schema: string
       status: supported
       description: A list of names
-      required: true
     num_cpus:
       type: integer
       description: Actual number of CPUs allocated to the node instance
 `, 'test' )).toEqual([]) });
 
 
-	it("The compiler should accept multiple complex properties",
+	it("The compiler should accept multiple complex attributes",
 		function() { expect( app.parse(`
-properties:
+attributes:
     names:
       type: list
       entry_schema: string
       status: deprecated
       description: A list of names
-      required: true
     num_cpus:
       type: integer
       description: Number of CPUs requested for a software node instance
       default: 1
-      required: true
-      constraints:
-        - valid_values: [1,2,4,8]
     list_int:
       type: list
-      constraints:
-        - min_length: 2
       entry_schema:
         type: integer
         description: tagada
@@ -183,13 +165,10 @@ properties:
         - 2
         - 3
         - 4
-      required: true
       description: Number of CPUs requested for a software node instance
     map_string:
       description: une belle poesie
       type: map
-      constraints:
-        - min_length: 2
       entry_schema:
         type: string
         description: tagada
@@ -201,12 +180,11 @@ properties:
         deux: pouet
         trois: pouet
         quatre: tsointsoin
-      required: true
 `, 'test' )).toEqual([]) });
 
-	it("The compiler should accept property with multi-level complex type and default ",
+	it("The compiler should accept attribute with multi-level complex type and default ",
 		function() { expect( app.parse(`
-properties:
+attributes:
   complexcollection:
     type: list
     entry_schema:
@@ -232,64 +210,7 @@ properties:
           - en bas
         personnes:
           - lea.sambe
-`, 'test' )).toEqual([]) });
-
-	it("The compiler should accept property with a json schema constraint ",
-		function() { expect( app.parse(`
-properties:
-  event_object:
-    type: json
-    constraints:
-      - schema:>+
-         {
-          "$schema": "http://json-schema.org/draft-04/schema#",
-          "title": "Event",
-          "description": "Example Event type schema",
-          "type": "object",
-          "p roperties": {
-            "uuid": {
-              "description": "The unique ID for the event.",
-              "type": "string"
-            },
-            "code": {
-            "type": "integer"
-            },
-            "message": {
-              "type": "string"
-            }
-          },
-          "required": ["uuid", "code"]
-         }
-
-`, 'test' )).toEqual([]) });
-
-	it("The compiler should accept property with a xml schema constraint ",
-		function() { expect( app.parse(`
-properties:
-  event_object:
-    type: xml
-    constraints:
-      - schema: >
-          <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-            targetNamespace="http://cloudplatform.org/events.xsd"
-            xmlns="http://tempuri.org/po.xsd" elementFormDefault="qualified">
-            <xs:annotation>
-              <xs:documentation xml:lang="en">
-                Event object.
-              </xs:documentation>
-            </xs:annotation>
-            <xs:element name="eventObject">
-              <xs:complexType>
-                <xs:sequence>
-                  <xs:element name="uuid" type="xs:string"/>
-                  <xs:element name="code" type="xs:integer"/>
-                   <xs:element name="message" type="xs:string" minOccurs="0"/>
-                </xs:sequence>
-              </xs:complexType>
-            </xs:element>
-          </xs:schema>
-`, 'test' )).toEqual([]) });
-	
+`, 'test' )).toEqual([]) });	
 
   });
 

@@ -189,6 +189,9 @@ stmp_test
  | namespace
  | descr
  | properties
+ | attributes
+ | inputs
+ | data_types
  ;
 
 stmt
@@ -636,9 +639,9 @@ property_clause
  | 'status:' ID NEWLINE
        { ['supported', 'unsupported', 'experimental', 'deprecated'].includes($ID.text) }?
  | entry_decl
-// | 'external-schema:' str NEWLINE? a priori erreur dans le doc : le schema est defini en contrainte
  | entity_metadata
  ;
+// | 'external-schema:' str NEWLINE? a priori erreur dans le doc : le schema est defini en contrainte
 
 property_assignments
  : 'properties:'
@@ -676,7 +679,7 @@ attributes
  ;
  
 attribute
- : 'name:' ID NEWLINE 
+ : ID ':' NEWLINE 
      { let u = new UnorderedClauses(this);
        u.mandatory = ['type:']; u.label = $ID.text }
  	 INDENT
@@ -742,7 +745,7 @@ attribute_assignment_clause
 inputs
  : 'inputs:' NEWLINE
      INDENT
-       properties+
+       property+
      DEDENT
  ;
 
@@ -814,7 +817,7 @@ output_parameter_clause
 constraints
  : 'constraints:' NEWLINE
 		INDENT
-			( '-' INDENT constraint_clause NEWLINE DEDENT)+
+			( '-' INDENT constraint_clause NEWLINE? DEDENT)+
 		DEDENT
  ;
 
@@ -829,8 +832,8 @@ constraint_clause
  | 'length:'           ( str | list | map ) 
  | 'min_length:'       ( str | list | map )
  | 'max_length:'       ( str | list | map )
- | 'pattern:'          str
- | 'schema:'           str
+ | 'pattern:'          short_str
+ | 'schema:'           str 
  ;
 
 entry_decl
@@ -1144,7 +1147,7 @@ interface_def_template
      DEDENT
      { u.check(); }	 
  ;
- 
+
 interface_def_template_clause
  : 'type:' ID NEWLINE
  | input_assignments
@@ -2018,6 +2021,7 @@ alltoken
  | STEPS
  | JOIN
  | NAMESPACE
+ | MLPREF
  ;
 
 BASETYPE_NAMES
