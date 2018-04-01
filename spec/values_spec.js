@@ -399,21 +399,21 @@ describe("Tosca Compiler syntax -> ", function() {
     describe("list ", function() {
 
     it("The parser should accept empty list ",
-		function() { expect( app.parse(`[]`, 'test')).toEqual([]) });
+		function() { expect( app.parse(`[]`, 'test_lists')).toEqual([]) });
 
     it("The parser should accept multiline empty list ",
 		function() { expect( app.parse(`[  
 
-]`, 'test')).toEqual([]) });
+]`, 'test_lists')).toEqual([]) });
 	
     it("The parser should accept list of integers in short notation ",
-		function() { expect( app.parse(`[1, 2, 3, -6]`, 'test')).toEqual([]) });
+		function() { expect( app.parse(`[1, 2, 3, -6]`, 'test_lists')).toEqual([]) });
 
     it("The parser should accept multiline list of integers in short notation ",
 		function() { expect( app.parse(`[
 1, 2, 
 3, 
--6]`, 'test')).toEqual([]) });
+-6]`, 'test_lists')).toEqual([]) });
 
     it("The parser should accept list of integer in expended notation ",
 		function() { expect( app.parse(
@@ -421,24 +421,24 @@ describe("Tosca Compiler syntax -> ", function() {
 - 2
 - 3
 - -6
-`, 'test')).toEqual([]) });
+`, 'test_lists')).toEqual([]) });
 
     it("The parser should accept expended list with one item ",
 		function() { expect( app.parse(
-`- tagada`, 'test')).toEqual([]) });
+`- tagada`, 'test_lists')).toEqual([]) });
 
     it("The parser should accept expended list of short list ",
 		function() { expect( app.parse(
 `- [ 1, 2]
 - [4,5]
-`, 'test')).toEqual([]) });
+`, 'test_lists')).toEqual([]) });
 
     it("The parser should accept expended list of expended lists ",
 		function() { expect( app.parse(
 `- - 1
 - - '4' 
   - '5'
-`, 'test')).toEqual([]) });
+`, 'test_lists')).toEqual([]) });
 	
     it("The parser should accept expended list of maps ",
 		function() { expect( app.parse(
@@ -449,7 +449,7 @@ describe("Tosca Compiler syntax -> ", function() {
 - test: 7
   esszi: 9
 - des: gtr
-`, 'test')).toEqual([]) });
+`, 'test_lists')).toEqual([]) });
 
     it("The parser should accept heterogeous lists ",
 		function() { expect( app.parse(
@@ -460,7 +460,7 @@ describe("Tosca Compiler syntax -> ", function() {
 - test: 7
   esszi: 9
 - -23.5e4 Hz
-`, 'test')).toEqual([]) });
+`, 'test_lists')).toEqual([]) });
 
     });
 
@@ -469,10 +469,10 @@ describe("Tosca Compiler syntax -> ", function() {
     it("The parser should accept empty map ",
 		function() { expect( app.parse(`{}`, 'map')).toEqual([]) });
 
-    it("The parser should accept multiline empty list ",
+    it("The parser should accept multiline empty map ",
 		function() { expect( app.parse(`{  
 
-}`, 'test')).toEqual([]) });
+}`, 'test_maps')).toEqual([]) });
 	
     it("The parser should accept map in short notation ",
 		function() { expect( app.parse(`{a: 1, bb: 2, v: 3, z: -6}`, 'map')).toEqual([]) });
@@ -481,7 +481,7 @@ describe("Tosca Compiler syntax -> ", function() {
 		function() { expect( app.parse(`{ 
 a:1, bb: 2, 
 v: 3, 
-z: -6}`, 'test')).toEqual([]) });
+z: -6}`, 'test_maps')).toEqual([]) });
 
     it("The parser should accept map in expended notation ",
 		function() { expect( app.parse(
@@ -499,7 +499,7 @@ d: -6
 		function() { expect( app.parse(
 `val1: [ 1, 2]
 val2: { a: 4, fr:5}
-`, 'test')).toEqual([]) });
+`, 'test_maps')).toEqual([]) });
 
     it("The parser should accept expended map of maps ",
 		function() { expect( app.parse(
@@ -514,7 +514,7 @@ trois:
   esszi: 9
 quatre:
   des: gtr
-`, 'test')).toEqual([]) });
+`, 'test_maps')).toEqual([]) });
 
     it("The parser should accept expended map of lists of map or lists etc.",
 		function() { expect( app.parse(
@@ -537,7 +537,7 @@ deux:
    - ygh
    - - a
 
-`, 'test')).toEqual([]) });
+`, 'test_maps')).toEqual([]) });
 	
 	});
 	

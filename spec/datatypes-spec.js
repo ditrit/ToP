@@ -35,7 +35,7 @@ data_types:
       areacode:
         type: integer
         required: true
-` , 'test' )).toEqual([]) });
+` , 'test_data_types' )).toEqual([]) });
 
 
 	it("The compiler should accept normative datatypes definition",
@@ -132,7 +132,7 @@ data_types:
         required: false
         constraints:
           - in_range: [ 1, 65535 ]
-` , 'test' )).toEqual([]) });
+` , 'test_data_types' )).toEqual([]) });
 
 
 
@@ -148,17 +148,17 @@ data_types:
         default: ssh
         constraints:
           - valid_values:
-            - ssh
+              - ssh
       token_type:
         type: string
         default: identifier
         constraints:
           - valid_values:
-            - identifier
+              - identifier
       token:
         type: string
         required: true
-` , 'test' )).toEqual([]) });
+` , 'test_data_types' )).toEqual([]) });
 
 	it("The compiler should accept a datatype derivation from root",
 		function() { expect( app.parse(`
@@ -178,7 +178,7 @@ data_types:
       port:
         type: PortDef
         default: 22
-` , 'test' )).toEqual([]) });
+` , 'test_data_types' )).toEqual([]) });
 	
 
   });

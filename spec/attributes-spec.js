@@ -10,7 +10,7 @@ attributes:
   actual_cpus:
     type: integer
     description: Number of CPUs requested for a software node instance.
-`, 'test' )).toEqual([]) });
+`, 'test_attributes' )).toEqual([]) });
 
 	it("The compiler should attribute with no description",
 		function() { expect( app.parse(`
@@ -18,7 +18,7 @@ attributes:
   names:
     type: list
     entry_schema: string 
-`, 'test' )).toEqual([]) });
+`, 'test_attributes' )).toEqual([]) });
 
 	it("The compiler should accept attribute with entry_schema",
 		function() { expect( app.parse(`
@@ -27,7 +27,7 @@ attributes:
     type: list
     entry_schema: string
     description: A list of names 
-`, 'test' )).toEqual([]) });
+`, 'test_attributes' )).toEqual([]) });
 
 	it("The compiler should accept attribute with list but no entry_schema",
 		function() { expect( app.parse(`
@@ -35,7 +35,7 @@ attributes:
   names:
       type: list
       description: Actual number of CPUs allocated to the node instance """))
-`, 'test' )).toEqual([]) });
+`, 'test_attributes' )).toEqual([]) });
 
 	it("The compiler should not accept attribute with metadata",
 		function() { expect( app.parse(`
@@ -46,7 +46,7 @@ attributes:
       metadata: 
         un:    deux
         trois: quatre
-`, 'test' )[0].text).toContain("extraneous input 'metadata:'") });
+`, 'test_attributes' )[0].text).toContain("extraneous input 'metadata'") });
 	
 	it("The compiler should accept attribute with default",
 		function() { expect( app.parse(`
@@ -55,7 +55,7 @@ attributes:
     type: integer
     default: 4
     description: Actual number of CPUs allocated to the node instance 
-`, 'test' )).toEqual([]) });
+`, 'test_attributes' )).toEqual([]) });
 
 
 	it("The compiler should not accept attribute with constraints",
@@ -67,7 +67,7 @@ attributes:
     default: 1
     constraints:
       - equal: 1
-`, 'test' )[0].text).toContain("extraneous input 'constraints:'") });
+`, 'test_attributes' )[0].text).toContain("extraneous input 'constraints'") });
 
 	it("The compiler should accept a attribute with a correct status",
 		function() { expect( app.parse(`
@@ -77,7 +77,7 @@ attributes:
     entry_schema: string
     status: experimental
     description: A list of names 
-`, 'test' )).toEqual([]) });
+`, 'test_attributes' )).toEqual([]) });
 
 	it("The compiler should accept attribute of type 'list with constraints'",
 		function() { expect( app.parse(`
@@ -96,7 +96,7 @@ attributes:
       - 3
       - 4
     description: Number of CPUs requested for a software node instance
-`, 'test' )).toEqual([]) });
+`, 'test_attributes' )).toEqual([]) });
 
 	it("The compiler should accept a attribute with complex type, status and default value",
 		function() { expect( app.parse(`
@@ -114,7 +114,7 @@ attributes:
         - min_length: 4
         - max_length: 10
     status: experimental
-`, 'test' )).toEqual([]) });
+`, 'test_attributes' )).toEqual([]) });
 
 	it("The compiler should not accept a attribute with bad status",
 		function() { expect( app.parse(`
@@ -124,7 +124,7 @@ attributes:
       entry_schema: string
       status: experiment
       description: A list of names
-`, 'test' )[0].text).toContain("failed predicate") });
+`, 'test_attributes' )[0].text).toContain("failed predicate") });
 
 	it("The compiler should accept multiple attributes",
 		function() { expect( app.parse(`
@@ -137,7 +137,7 @@ attributes:
     num_cpus:
       type: integer
       description: Actual number of CPUs allocated to the node instance
-`, 'test' )).toEqual([]) });
+`, 'test_attributes' )).toEqual([]) });
 
 
 	it("The compiler should accept multiple complex attributes",
@@ -180,7 +180,7 @@ attributes:
         deux: pouet
         trois: pouet
         quatre: tsointsoin
-`, 'test' )).toEqual([]) });
+`, 'test_attributes' )).toEqual([]) });
 
 	it("The compiler should accept attribute with multi-level complex type and default ",
 		function() { expect( app.parse(`
@@ -210,7 +210,7 @@ attributes:
           - en bas
         personnes:
           - lea.sambe
-`, 'test' )).toEqual([]) });	
+`, 'test_attributes' )).toEqual([]) });	
 
   });
 

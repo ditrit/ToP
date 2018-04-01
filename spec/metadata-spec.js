@@ -11,7 +11,7 @@ describe("Tosca Compiler syntax -> ", function() {
 metadata:
   template_author: Xavier Talon
   template_name:   Un joli nom
-`					)).toEqual([]) });
+`, 'tosca_input'				)).toEqual([]) });
 
 	it("The compiler should accept metadata with additional keys",
 		function() { expect( app.parse(
@@ -22,7 +22,7 @@ metadata:
   template_author: Xavier Talon
   template_name:   Un joli nom
   autre: un autre
-`				)).toEqual([]) });
+`, 'tosca_input'				)).toEqual([]) });
 
 	it("The compiler should reject metadata with duplicated keys",
 		function() { expect( app.parse(
@@ -32,7 +32,7 @@ metadata:
   template_author: Xavier Talon
   template_name:   Un joli nom
   template_author: Jean Talon LU
-`				)[0].text ).toContain("duplicated") });
+`, 'tosca_input'				)[0].text ).toContain("duplicated") });
 
 	it("The compiler should accept example of the normative doc",
 		function() { expect( app.parse(
@@ -41,7 +41,7 @@ metadata:
 metadata:
   foo1: bar1
   foo2: bar2
-`				)).toEqual([]) });
+`, 'tosca_input'				)).toEqual([]) });
   });
 
 });

@@ -14,7 +14,7 @@ inputs:
     required: true
     constraints:
       - valid_values: [ 1, 2, 4, 8 ]
-`, 'test' )).toEqual([]) });
+`, 'test_inputs' )).toEqual([]) });
 
 	it("The compiler should property with no description",
 		function() { expect( app.parse(`
@@ -22,7 +22,7 @@ inputs:
   names:
     type: list
     entry_schema: string 
-`, 'test' )).toEqual([]) });
+`, 'test_inputs' )).toEqual([]) });
 
 	it("The compiler should accept property with entry_schema",
 		function() { expect( app.parse(`
@@ -32,7 +32,7 @@ inputs:
     entry_schema: string
     required: false
     description: A list of names 
-`, 'test' )).toEqual([]) });
+`, 'test_inputs' )).toEqual([]) });
 
 	it("The compiler should accept property with list but no entry_schema",
 		function() { expect( app.parse(`
@@ -40,7 +40,7 @@ inputs:
   names:
       type: list
       description: Actual number of CPUs allocated to the node instance """))
-`, 'test' )).toEqual([]) });
+`, 'test_inputs' )).toEqual([]) });
 
 	it("The compiler should accept property with metadata",
 		function() { expect( app.parse(`
@@ -51,7 +51,7 @@ inputs:
         un: deux
         trois: quatre
       description: Actual number of CPUs allocated to the node instance """))
-`, 'test' )).toEqual([]) });
+`, 'test_inputs' )).toEqual([]) });
 	
 	it("The compiler should accept property with default",
 		function() { expect( app.parse(`
@@ -60,7 +60,7 @@ inputs:
     type: integer
     default: 4
     description: Actual number of CPUs allocated to the node instance 
-`, 'test' )).toEqual([]) });
+`, 'test_inputs' )).toEqual([]) });
 
 
 	it("The compiler should accept property with constraints",
@@ -73,7 +73,7 @@ inputs:
     required: true
     constraints:
       - valid_values: [1,2,4,8]
-`, 'test' )).toEqual([]) });
+`, 'test_inputs' )).toEqual([]) });
 
 	it("The compiler should accept a property with a correct status",
 		function() { expect( app.parse(`
@@ -83,7 +83,7 @@ inputs:
     entry_schema: string
     status: experimental
     description: A list of names 
-`, 'test' )).toEqual([]) });
+`, 'test_inputs' )).toEqual([]) });
 
 	it("The compiler should accept property of type list with constraints",
 		function() { expect( app.parse(`
@@ -105,7 +105,7 @@ inputs:
       - 4
     required: true
     description: Number of CPUs requested for a software node instance
-`, 'test' )).toEqual([]) });
+`, 'test_inputs' )).toEqual([]) });
 
 	it("The compiler should accept a property with complex type, status, default value and constraint",
 		function() { expect( app.parse(`
@@ -125,7 +125,7 @@ inputs:
         - min_length: 4
         - max_length: 10
     status: experimental
-`, 'test' )).toEqual([]) });
+`, 'test_inputs' )).toEqual([]) });
 
 	it("The compiler should not accept a property with bad status",
 		function() { expect( app.parse(`
@@ -135,7 +135,7 @@ inputs:
       entry_schema: string
       status: experiment
       description: A list of names
-`, 'test' )[0].text).toContain("failed predicate") });
+`, 'test_inputs' )[0].text).toContain("failed predicate") });
 
 	it("The compiler should accept multiple inputs",
 		function() { expect( app.parse(`
@@ -149,7 +149,7 @@ inputs:
     num_cpus:
       type: integer
       description: Actual number of CPUs allocated to the node instance
-`, 'test' )).toEqual([]) });
+`, 'test_inputs' )).toEqual([]) });
 
 
 	it("The compiler should accept multiple complex inputs",
@@ -202,7 +202,7 @@ inputs:
         trois: pouet
         quatre: tsointsoin
       required: true
-`, 'test' )).toEqual([]) });
+`, 'test_inputs' )).toEqual([]) });
 
 	it("The compiler should accept property with multi-level complex type and default ",
 		function() { expect( app.parse(`
@@ -232,7 +232,7 @@ inputs:
           - en bas
         personnes:
           - lea.sambe
-`, 'test' )).toEqual([]) });
+`, 'test_inputs' )).toEqual([]) });
 
 	it("The compiler should accept property with a json schema constraint ",
 		function() { expect( app.parse(`
@@ -261,7 +261,7 @@ inputs:
           "required": ["uuid", "code"]
          }
 
-`, 'test' )).toEqual([]) });
+`, 'test_inputs' )).toEqual([]) });
 
 	it("The compiler should accept property with a xml schema constraint ",
 		function() { expect( app.parse(`
@@ -288,7 +288,7 @@ inputs:
               </xs:complexType>
             </xs:element>
           </xs:schema>
-`, 'test' )).toEqual([]) });
+`, 'test_inputs' )).toEqual([]) });
 	
 
   });
