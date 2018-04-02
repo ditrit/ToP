@@ -191,6 +191,7 @@ test_descr : ( NEWLINE | descr )* EOF ;
 test_constraints : ( NEWLINE | constraints )* EOF ;
 test_metadata : ( NEWLINE | metadata )* EOF ;
 test_capabilities : ( NEWLINE | capability_defs )* EOF ;
+test_requirements : ( NEWLINE | requirement_defs )* EOF ;
 
 descr
  : 'description' ':' str NEWLINE?
@@ -1058,14 +1059,14 @@ capability_def_clause
 
 requirement_defs
  : 'requirements' ':' NEWLINE
-	INDENT
-	  requirement_def+
-	DEDENT
+	( INDENT
+	    requirement_def+
+	  DEDENT )?
  ;
 
 requirement_def
  : '-' INDENT id ':' id NEWLINE DEDENT 
- | '-' id INDENT ':' NEWLINE
+ | '-' INDENT id ':' NEWLINE
          INDENT
          { let u = new UnorderedClauses(this); 
            u.mandatory = [ 'capability' ]; u.label = $id.text }
@@ -1077,6 +1078,7 @@ requirement_def
 
 requirement_def_clause
  : 'capability' ':' id NEWLINE
+ | descr   // not in grammar of normative doc but in examples of normative doc...
  | 'node' ':' id NEWLINE
  | 'occurrences' ':' range NEWLINE
  | 'relationship' ':' id NEWLINE
