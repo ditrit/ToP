@@ -4,6 +4,12 @@ describe("Tosca Compiler syntax -> ", function() {
 	
   describe("imports : ", function() {
 
+	it("The compiler should accept empty imports section",
+		function() { expect( app.parse(`
+tosca_definitions_version: tosca_simple_yaml_1_2
+imports:
+`	)).toEqual([]) });
+
 	it("The compiler should accept simple list of file paths",
 		function() { expect( app.parse(`
 tosca_definitions_version: tosca_simple_yaml_1_2

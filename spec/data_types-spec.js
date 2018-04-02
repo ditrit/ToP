@@ -4,6 +4,13 @@ describe("Tosca Compiler syntax -> ", function() {
 	
   describe("datatypes : ", function() {
 
+	it("The compiler should accept an empty data_types section",
+		function() { expect( app.parse(`
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+data_types:
+` )).toEqual([]) });
+
 	it("The compiler should accept example of the normative doc",
 		function() { expect( app.parse(`
 tosca_definitions_version: tosca_simple_yaml_1_2

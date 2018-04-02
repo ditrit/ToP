@@ -4,6 +4,13 @@ describe("Tosca Compiler syntax -> ", function() {
 	
   describe("artifacts : ", function() {
 
+  	it("The compiler should accept an empty artifact_types section",
+		function() { expect( app.parse(`
+tosca_definitions_version: tosca_simple_yaml_1_2
+artifact_types:
+`	)).toEqual([]) });
+  		  
+  		 
   	it("The compiler should accept normative tosca.artifact.Root",
 		function() { expect( app.parse(`
 tosca_definitions_version: tosca_simple_yaml_1_2

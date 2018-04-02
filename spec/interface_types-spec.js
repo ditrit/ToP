@@ -4,7 +4,7 @@ describe("Tosca Compiler syntax -> ", function() {
 	
   describe("interface_types : ", function() {
 
-	it("The compiler should accept no interfaces definition",
+	it("The compiler should accept an empty interface_types section",
 		function() { expect( app.parse(`
 tosca_definitions_version: tosca_simple_yaml_1_2
 

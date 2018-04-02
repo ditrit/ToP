@@ -193,6 +193,7 @@ test_namespace : ( NEWLINE | namespace )* EOF ;
 test_descr : ( NEWLINE | descr )* EOF ;
 test_constraints : ( NEWLINE | constraints )* EOF ;
 test_metadata : ( NEWLINE | metadata )* EOF ;
+test_capabilities : ( NEWLINE | capability_defs )* EOF ;
 
 descr
  : 'description' ':' str NEWLINE?
@@ -464,12 +465,11 @@ namespace
  
 metadata
  : 'metadata' ':' NEWLINE
-     { let u = new UnorderedClauses(this);
-       u.mandatory = []; u.label = 'metadata' }
+     ({ let u = new UnorderedClauses(this); u.label = 'metadata' }
      INDENT
        ( metadata_clause NEWLINE {u.add($metadata_clause.ctx) })+
      DEDENT
- 	 { u.check(); }
+ 	 { u.check(); })?
  ;
 
 metadata_clause
@@ -893,9 +893,9 @@ entity_clause
 
 node_types
  : 'node_types' ':' NEWLINE
-	 INDENT
+	 ( INDENT
 		node_types+
-	 DEDENT
+	   DEDENT )?
  ;
 
 node_type
@@ -919,9 +919,9 @@ node_type_clause
 	
 relationship_types
  : 'relationship_types' ':' NEWLINE 
-	 INDENT
+	 ( INDENT
 		relationship_type+
-	 DEDENT
+	   DEDENT )?
 	;
 
 relationship_type
@@ -947,9 +947,9 @@ relationship_type_clause
 
 artifact_types
  : 'artifact_types' ':' NEWLINE
-	 INDENT
-	   artifact_type+
-	 DEDENT 
+	 ( INDENT
+	     artifact_type+
+	   DEDENT )? 
  ;
 
 artifact_type
@@ -977,9 +977,9 @@ artifact_type_clause
 
 data_types
  : 'data_types' ':' NEWLINE 
-	 INDENT
-	   data_type+
-	 DEDENT 
+	 ( INDENT
+	     data_type+
+	   DEDENT )?
  ;
 	
 data_type
@@ -999,9 +999,9 @@ data_type_clause
 
 capability_types
  : 'capability_types' ':' NEWLINE
-     (INDENT
-	   capability_type+
-	 DEDENT)?
+     ( INDENT
+	     capability_type+
+	   DEDENT )?
  ;
 
 capability_type
@@ -1027,9 +1027,9 @@ capability_type_clause
 
 capability_defs
  : 'capabilities' ':' NEWLINE
-	 INDENT
+	( INDENT
 	   capability_def+
-	 DEDENT 
+	  DEDENT )?
  ;
 
 // quid de 'occurecne' qui n'a pas de sens...
@@ -1097,9 +1097,9 @@ requirement_def_relation_clause
 
 interface_types
  : 'interface_types' ':' NEWLINE 
-	 (INDENT
-	   interface_type+
-	 DEDENT)?
+	 ( INDENT
+	     interface_type+
+	   DEDENT )?
  ;
 
 interface_type
@@ -1213,9 +1213,9 @@ operation_artifact_def
  
 group_types
  : 'group_types' ':'
-	INDENT
-	  group_type+
-	DEDENT
+	 ( INDENT
+	     group_type+
+	   DEDENT )?
  ;
 
 group_type
@@ -1278,9 +1278,9 @@ group_def_clause
 
 policy_types
  : 'policy_types' ':' NEWLINE
-	 INDENT
-	   policy_type+
-	 DEDENT
+	 ( INDENT
+	     policy_type+
+	   DEDENT )?
  ;
 
 policy_type

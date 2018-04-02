@@ -4,6 +4,12 @@ describe("Tosca Compiler syntax -> ", function() {
 	
   describe("capability_types : ", function() {
 
+	it("The compiler should an empty capability_types section",
+		function() { expect( app.parse(`
+tosca_definitions_version: tosca_simple_yaml_1_2
+capability_types:
+` )).toEqual([]) });
+
 	it("The compiler should accept Root capability",
 		function() { expect( app.parse(`
 tosca_definitions_version: tosca_simple_yaml_1_2
