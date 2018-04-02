@@ -1,0 +1,236 @@
+app = require("../topar.js");
+
+describe("Tosca Compiler syntax -> ", function() {
+	
+  describe("capability_types : ", function() {
+
+	it("The compiler should accept Root capability",
+		function() { expect( app.parse(`
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+capability_types:
+
+      tosca.capabilities.Root:
+         description: The TOSCA Capability Type all other TOSCA Capability Types derive from
+` )).toEqual([]) });
+
+	it("The compiler should accept just named capability",
+		function() { expect( app.parse(`
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+capability_types:
+
+      tosca.capabilities.Root:
+
+` )).toEqual([]) });
+
+	it("The compiler should accept derived capability",
+		function() { expect( app.parse(`
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+capability_types:
+
+      tosca.capabilities.Root:
+         description: The TOSCA Capability Type all other TOSCA Capability Types derive from
+      tosca.capabilities.Node:
+         derived_from: tosca.capabilities.Root
+
+` )).toEqual([]) });
+
+	it("The compiler should accept normative capability types",
+		function() { expect( app.parse(`
+tosca_definitions_version: tosca_simple_yaml_1_2
+
+capability_types:
+ 
+  #section: 5.5.1 tosca.capabilities.Root
+  #url: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/csprd02/TOSCA-Simple-Profile-YAML-v1.1-csprd02.html#DEFN_TYPE_CAPABILITIES_ROOT
+  tosca.capabilities.Root:
+    description: The TOSCA root Capability Type all other TOSCA base Capability Types derive from
+  
+  #section: 5.5.2 tosca.capabilities.Node
+  #url: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/csprd02/TOSCA-Simple-Profile-YAML-v1.1-csprd02.html#DEFN_TYPE_CAPABILITIES_NODE
+  tosca.capabilities.Node:
+    derived_from: tosca.capabilities.Root
+  
+  #section: 5.5.3 tosca.capabilities.Compute
+  #url: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/csprd02/TOSCA-Simple-Profile-YAML-v1.1-csprd02.html#DEFN_TYPE_CAPABILITIES_COMPUTE
+  tosca.capabilities.Compute:
+    derived_from: tosca.capabilities.Root
+    properties:
+      name:
+        type: string
+        required: false
+      num_cpus:
+        type: integer
+        required: false
+        constraints:
+          - greater_or_equal: 1
+      cpu_frequency:
+        type: scalar-unit.frequency
+        required: false
+        constraints:
+          - greater_or_equal: 0.1 GHz
+      disk_size:
+        type: scalar-unit.size
+        required: false
+        constraints:
+          - greater_or_equal: 0 MB
+      mem_size:
+        type: scalar-unit.size
+        required: false
+        constraints:
+          - greater_or_equal: 0 MB
+  
+  #section: 5.5.4 tosca.capabilities.Network
+  #url: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/csprd02/TOSCA-Simple-Profile-YAML-v1.1-csprd02.html#DEFN_TYPE_CAPABILITIES_NETWORK
+  tosca.capabilities.Network:
+    derived_from: tosca.capabilities.Root
+    properties:
+      name:
+        type: string
+        required: false
+  
+  #section: 5.5.5 tosca.capabilities.Storage
+  #url: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/csprd02/TOSCA-Simple-Profile-YAML-v1.1-csprd02.html#DEFN_TYPE_CAPABILITIES_STORAGE
+  tosca.capabilities.Storage:
+    derived_from: tosca.capabilities.Root
+    properties:
+      name:
+        type: string
+        required: false
+  
+  #section: 5.5.6 tosca.capabilities.Container 
+  #url: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/csprd02/TOSCA-Simple-Profile-YAML-v1.1-csprd02.html#DEFN_TYPE_CAPABILITIES_CONTAINER
+  tosca.capabilities.Container:
+    derived_from: tosca.capabilities.Compute
+  
+  #section: 5.5.7 tosca.capabilities.Endpoint
+  #url: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/csprd02/TOSCA-Simple-Profile-YAML-v1.1-csprd02.html#DEFN_TYPE_CAPABILITIES_ENDPOINT
+  tosca.capabilities.Endpoint:
+    derived_from: tosca.capabilities.Root
+    properties:
+      protocol:
+        type: string
+        required: true
+        default: tcp
+      port:
+        type: PortDef
+        required: false
+      secure:
+        type: boolean
+        required: false
+        default: false
+      url_path:
+        type: string
+        required: false
+      port_name:
+        type: string
+        required: false
+      network_name:
+        type: string
+        required: false
+        default: PRIVATE
+      initiator:
+        type: string
+        required: false
+        default: source
+        constraints:
+          - valid_values: [ source, target, peer ]
+      ports:
+        type: map
+        required: false
+        constraints:
+          - min_length: 1
+        entry_schema:
+          type: PortSpec
+    attributes:
+      ip_address:
+        type: string
+  
+  #section: 5.5.8 tosca.capabilities.Endpoint.Public
+  #url: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/csprd02/TOSCA-Simple-Profile-YAML-v1.1-csprd02.html#DEFN_TYPE_CAPABILITIES_ENDPOINT_PUBLIC
+  tosca.capabilities.Endpoint.Public:
+    derived_from: tosca.capabilities.Endpoint
+    properties:
+      # Change the default network_name to use the first public network found
+      network_name:
+        type: string
+        default: PUBLIC
+        constraints:
+          - equal: PUBLIC
+      floating:
+        description: >
+          indicates that the public address should be allocated from a pool of floating IPs that are associated with the network.
+        type: boolean
+        default: false
+        status: experimental
+      dns_name:
+        description: The optional name to register with DNS
+        type: string
+        required: false   
+        status: experimental
+  
+  #section: 5.5.9 tosca.capabilities.Endpoint.Admin
+  #url: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/csprd02/TOSCA-Simple-Profile-YAML-v1.1-csprd02.html#DEFN_TYPE_CAPABILITIES_ENDPOINT_ADMIN
+  tosca.capabilities.Endpoint.Admin:
+    derived_from: tosca.capabilities.Endpoint
+    # Change Endpoint secure indicator to true from its default of false
+    properties:
+      secure:
+        type: boolean
+        default: true
+        constraints:
+          - equal: true
+  
+  #section: 5.5.10 tosca.capabilities.Endpoint.Database
+  #url: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/csprd02/TOSCA-Simple-Profile-YAML-v1.1-csprd02.html#DEFN_TYPE_CAPABILITIES_ENDPOINT_DATABASE
+  tosca.capabilities.Endpoint.Database:
+    derived_from: tosca.capabilities.Endpoint
+  
+  #section: 5.5.11 tosca.capabilities.Attachment
+  #url: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/csprd02/TOSCA-Simple-Profile-YAML-v1.1-csprd02.html#DEFN_TYPE_CAPABILITIES_ATTACHMENT
+  tosca.capabilities.Attachment:
+    derived_from: tosca.capabilities.Root
+  
+  #section: 5.5.12 tosca.capabilities.OperatingSystem
+  #url: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/csprd02/TOSCA-Simple-Profile-YAML-v1.1-csprd02.html#DEFN_TYPE_CAPABILITIES_OPSYS
+  tosca.capabilities.OperatingSystem:
+    derived_from: tosca.capabilities.Root
+    properties:
+      architecture:
+        type: string
+        required: false
+      type:
+        type: string
+        required: false
+      distribution:
+        type: string
+        required: false
+      version:
+        type: version
+        required: false
+  
+  #section: 5.5.13 tosca.capabilities.Scalable
+  #url: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/csprd02/TOSCA-Simple-Profile-YAML-v1.1-csprd02.html#DEFN_TYPE_CAPABILITIES_SCALABLE
+  tosca.capabilities.Scalable:
+    derived_from: tosca.capabilities.Root
+    properties:
+      min_instances:
+        type: integer
+        default: 1
+      max_instances:
+        type: integer
+        default: 1
+      default_instances:
+        type: integer
+  
+  #section: 5.5.14 tosca.capabilities.network.Bindable
+  #url: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/csprd02/TOSCA-Simple-Profile-YAML-v1.1-csprd02.html#DEFN_TYPE_CAPABILITIES_NETWORK_BINDABLE
+  tosca.capabilities.network.Bindable:
+    derived_from: tosca.capabilities.Node
+` )).toEqual([]) });
+
+  });                                               
+
+});

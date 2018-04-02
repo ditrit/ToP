@@ -241,10 +241,10 @@ describe("Tosca Compiler syntax -> ", function() {
     describe("strings : ", function() {
 
   	it("The parser should accept simple quoted strings",
-		function() { expect( app.parse(`'je suis très "content"'`, 'str')).toEqual([]) });
+		function() { expect( app.parse(`'je suis: très "content !"'`, 'str')).toEqual([]) });
     
   	it("The parser should accept double quoted strings",
-		function() { expect( app.parse(`"je suis très 'content'"`, 'str')).toEqual([]) });
+		function() { expect( app.parse(`"je suis très: 'content'"`, 'str')).toEqual([]) });
     
   	it("The parser should accept no quoted strings",
 		function() { expect( app.parse(`je suis très 'content'`, 'str')).toEqual([]) });

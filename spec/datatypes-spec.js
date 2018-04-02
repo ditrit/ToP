@@ -6,6 +6,8 @@ describe("Tosca Compiler syntax -> ", function() {
 
 	it("The compiler should accept example of the normative doc",
 		function() { expect( app.parse(`
+tosca_definitions_version: tosca_simple_yaml_1_2
+
 data_types:
 
   mytypes.phonenumber:
@@ -35,11 +37,12 @@ data_types:
       areacode:
         type: integer
         required: true
-` , 'test_data_types' )).toEqual([]) });
+` )).toEqual([]) });
 
 
 	it("The compiler should accept normative datatypes definition",
 		function() { expect( app.parse(`
+tosca_definitions_version: tosca_simple_yaml_1_2
 data_types:
   tosca.datatypes.Root:
     description: The TOSCA root Data Type all other TOSCA base Data Types derive from
@@ -132,13 +135,15 @@ data_types:
         required: false
         constraints:
           - in_range: [ 1, 65535 ]
-` , 'test_data_types' )).toEqual([]) });
+` )).toEqual([]) });
 
 
 
 
 	it("The compiler should accept a normative datatype derivation",
 		function() { expect( app.parse(`
+tosca_definitions_version: tosca_simple_yaml_1_2
+
 data_types:
   ditrit.datatypes.SshKey:
     derived_from: Credential
@@ -158,10 +163,12 @@ data_types:
       token:
         type: string
         required: true
-` , 'test_data_types' )).toEqual([]) });
+` )).toEqual([]) });
 
 	it("The compiler should accept a datatype derivation from root",
 		function() { expect( app.parse(`
+tosca_definitions_version: tosca_simple_yaml_1_2
+
 data_types:
   ditrit.datatypes.RemoteSsh:
     derived_from: tosca.datatypes.Root
@@ -178,7 +185,7 @@ data_types:
       port:
         type: PortDef
         default: 22
-` , 'test_data_types' )).toEqual([]) });
+` )).toEqual([]) });
 	
 
   });

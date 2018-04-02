@@ -148,10 +148,12 @@ tokens { INDENT, DEDENT }
     check() {
           for (let item of this.mandatory) 
      	    if (!(item in this.items)) 
-     	      this.thisparser.notifyErrorListeners("No '" + item + "' value provided for property '" + this.label + "'");
+     	      this.thisparser.notifyErrorListeners("No '" + item + "' value provided" + 
+     	        (this.label.length >0 ? " for '" + this.label + "'" : ""));
     	  for (let i in this.items) 
      	    if (this.items[i] > 1) 
-     	      this.thisparser.notifyErrorListeners("The clause '" + i + "' is duplicated in entity '" + this.label + "'"); 
+     	      this.thisparser.notifyErrorListeners("The clause '" + i + "' is duplicated '" + 
+     	        (this.label.length >0 ? " in '" + this.label + "'" : "")); 
     };
     
   };
@@ -184,7 +186,6 @@ tosca_input
 
 test_attributes : ( NEWLINE | attributes )* EOF ;
 test_properties : ( NEWLINE | properties )* EOF ;
-test_data_types : ( NEWLINE | data_types )* EOF ;
 test_inputs : ( NEWLINE | inputs )* EOF ;
 test_maps : ( NEWLINE | map )* EOF ;
 test_lists : ( NEWLINE | list )* EOF ;
@@ -205,15 +206,15 @@ service_template
  ;
  
 service_template_clause
- : namespace
- | metadata
- | repositories
- | file_imports
- | descr 
- | artifact_types
- | data_types
- | capability_types
- | interface_types
+ : namespace 				// OK
+ | metadata					// OK
+ | repositories				// OK
+ | file_imports				// OK
+ | descr 					// OK
+ | artifact_types			// OK
+ | data_types				// OK
+ | capability_types			// OK
+ | interface_types			// OK
  | relationship_types
  | node_types
  | group_types
@@ -480,9 +481,9 @@ metadata_clause
 
 repositories
  : 'repositories' ':' NEWLINE
-	  INDENT
+	  (INDENT
 	    repository+
-	  DEDENT 
+	  DEDENT)? 
  ;
 
 repository
@@ -496,7 +497,9 @@ repository_short
  
 repository_detail
  : id ':' NEWLINE
-     { let u = new UnorderedClauses(this); u.label = $id.text }
+     { let u = new UnorderedClauses(this);
+       u.mandatory = ['url'];
+       u.label = $id.text }
 	INDENT
 	  ( repository_clause {u.add($repository_clause.ctx) } )+
 	DEDENT 
@@ -514,9 +517,13 @@ repository_url
  ;
 
 repository_cred
- : 'credential' ':' '{' cred_ele (',' cred_ele)* '}' NEWLINE 
+ : 'credential' ':' '{' NEWLINE?
+     { let v = new UnorderedClauses(this); v.mandatory = ['token'];}
+     ele1=cred_ele {v.add($ele1.ctx); } 
+     (',' NEWLINE? ele2=cred_ele {v.add($ele2.ctx); })* 
+     NEWLINE? '}' { v.check(); } NEWLINE 
  | 'credential' ':' NEWLINE
-    { let u = new UnorderedClauses(this); }
+    { let u = new UnorderedClauses(this); u.mandatory = ['token'];}
 	INDENT
 	  ( cred_ele {u.add($cred_ele.ctx) } )+
 	DEDENT
@@ -524,22 +531,22 @@ repository_cred
  ;
 
 cred_ele
- : 'token' ':' id NEWLINE
- | 'protocol' ':' id  NEWLINE
- | 'token_type' ':' id NEWLINE
- | 'user' ':' id NEWLINE
+ : 'token' ':' short_str  NEWLINE?
+ | 'protocol' ':' id  NEWLINE?
+ | 'token_type' ':' id NEWLINE?
+ | 'user' ':' id NEWLINE?
  ;
 
 file_imports
  : 'imports' ':' NEWLINE
-	  INDENT
+	  (INDENT
 		file_import+ 
-	  DEDENT
+	  DEDENT)?
  ;
 
 file_import
- : '-' INDENT short_str NEWLINE DEDENT 
- | '-' INDENT id ':' short_str NEWLINE DEDENT 
+ : '-' INDENT (URI| filepath) NEWLINE DEDENT 
+ | '-' INDENT id ':' (URI| filepath) NEWLINE DEDENT 
  | '-' INDENT id ':' NEWLINE
          { let u = new UnorderedClauses(this); 
            u.mandatory = ['file']; u.label = $id.text}
@@ -548,6 +555,20 @@ file_import
 	     DEDENT
 	     { u.check(); }
 	   DEDENT
+ ;
+
+file_import_clause
+ : 'file' ':' (URI| filepath) NEWLINE
+ | 'repository' ':' id NEWLINE
+ | 'namespace_prefix' ':' id NEWLINE
+ | 'namespace_uri' ':' URI NEWLINE
+ ;
+
+filepath
+ : '.' id? ('/' ('..'| id) )* '/'?
+ | '..' ('/' ('..' | id))* '/'?
+ | id ('/' ('..' | id))* '/'?
+ | ('/' ('..' | id))+ '/'?
  ;
   
 artifact_defs
@@ -571,9 +592,9 @@ artifact_def
 artifact_def_clause
  : 'type' ':' id  NEWLINE 
  | 'file' ':' short_str NEWLINE
- | 'repository' ':' id
+ | 'repository' ':' id NEWLINE
  | descr
- | 'deploy_path' ':' id
+ | 'deploy_path' ':' id NEWLINE
  ;
 
 node_requirement_assignments
@@ -848,12 +869,6 @@ entry_clause
  | constraints
  ;
 
-file_import_clause
- : 'file' ':' short_str NEWLINE
- | 'repository' ':' id NEWLINE
- | 'namespace_prefix' ':' id NEWLINE
- | 'namespace_uri' ':' short_str NEWLINE
- ;
 
 entity_metadata
  : 'metadata' ':' NEWLINE
@@ -939,18 +954,23 @@ artifact_types
 
 artifact_type
  : id ':' NEWLINE
-	 INDENT
+	 (INDENT
      { let u = new UnorderedClauses(this); u.label = $id.text }
 	   ( artifact_type_clause {u.add($artifact_type_clause.ctx)} )+
 	 DEDENT
- 	 { u.check(); }
+ 	 { u.check(); })?
  ;
 
  
 
 artifact_type_clause
  : entity_clause 
+ | 'file_ext' ':' '[' ']' NEWLINE
  | 'file_ext' ':' '[' short_str (',' short_str)* ']' NEWLINE
+ | 'file_ext' ':' NEWLINE
+     (INDENT
+       ('-' INDENT short_str NEWLINE DEDENT)+
+     DEDENT)?
  | 'mime_type' ':' short_str NEWLINE
  | properties
  ;
@@ -979,19 +999,19 @@ data_type_clause
 
 capability_types
  : 'capability_types' ':' NEWLINE
-     INDENT
+     (INDENT
 	   capability_type+
-	 DEDENT 
+	 DEDENT)?
  ;
 
 capability_type
  : id ':' NEWLINE
-	 INDENT
+	 (INDENT
      { let u = new UnorderedClauses(this); u.label = $id.text }
 	   ( capability_type_clause 
 	     {u.add($capability_type_clause.ctx)})+
 	 DEDENT
-     { u.check(); }	 
+     { u.check(); })?	 
  ;
 
 capability_type_clause
@@ -1077,18 +1097,18 @@ requirement_def_relation_clause
 
 interface_types
  : 'interface_types' ':' NEWLINE 
-	 INDENT
+	 (INDENT
 	   interface_type+
-	 DEDENT 
+	 DEDENT)?
  ;
 
 interface_type
  : id ':' NEWLINE
-	 INDENT
-     { let u = new UnorderedClauses(this); u.mandatory = [ 'type' ]; }
+	 (INDENT
+     { let u = new UnorderedClauses(this); }
 	  ( interface_type_clause {u.add($interface_type_clause.ctx)})+
  	 DEDENT
-     { u.check(); }	 
+     { u.check(); })?	 
  ;
 
 interface_type_clause
@@ -1145,8 +1165,11 @@ interface_def_template_clause
  ;
  
 operation_def
- : id ':' id NEWLINE
+ : id ':'
+     { ! (['derived_from', 'description', 'inputs', 'metadata', 'version'].includes($id.text)) }?
+     (URI | filepath) NEWLINE
  | id ':' NEWLINE
+     { ! (['derived_from', 'description', 'inputs', 'metadata', 'version'].includes($id.text)) }?
      INDENT
      { let u = new UnorderedClauses(this); u.label = $id.text;}
        (operation_def_clause {u.add($operation_def_clause.ctx)})+
@@ -1157,7 +1180,7 @@ operation_def
 operation_def_clause
  : descr
  | inputs
- | 'implementation' ':' id NEWLINE
+ | 'implementation' ':' ( URI | filepath) NEWLINE
  | 'implementation' ':' NEWLINE
      INDENT
      { let u = new UnorderedClauses(this); u.mandatory = [ 'primary' ]; }
@@ -1167,13 +1190,27 @@ operation_def_clause
  ;
 
 implementation_clause
- : 'primary' ':' id NEWLINE
+ : 'primary' ':' ( URI | filepath) NEWLINE
+ | 'primary' ':' NEWLINE
+    { let u = new UnorderedClauses(this);
+      u.mandatory = ['type', 'file']; }
+ 	INDENT
+ 	  (artifact_def_clause {u.add($artifact_def_clause.ctx) })+
+	DEDENT
+ 	{ u.check(); }
  | 'dependencies' ':' NEWLINE
      INDENT
-       ('-' INDENT id NEWLINE DEDENT)+
+       ('-' INDENT ( URI | filepath | operation_artifact_def ) NEWLINE? DEDENT)+
      DEDENT
  ;
 
+operation_artifact_def
+ : { let u = new UnorderedClauses(this);
+      u.mandatory = ['type', 'file']; }
+ 	  (artifact_def_clause {u.add($artifact_def_clause.ctx) })+
+   { u.check(); }
+ ; 
+ 
 group_types
  : 'group_types' ':'
 	INDENT
@@ -1630,7 +1667,7 @@ workflow_state
  : id
        { [ 'initial', 'creating', 'created', 'configuring', 'configured',
              'starting', 'started', 'stopping', 'deleting', 
-             'error' ].inludes($id.text) }? 
+             'error' ].includes($id.text) }? 
              // 'stopped' et 'available' plus presents en 1.2
  ;
 
@@ -2383,9 +2420,9 @@ TIMESTAMP
 
 URI
  : SCHEME '://' ( URI_STR ':' URI_STR '@')? (URI_STR | IP) (':' DIGIT (DIGIT (DIGIT DIGIT?)?)?)? ('/' (URI_STR ('/' URI_STR)*'/'?)?)?
- ;
- 
-/// identifier   ::=  id_start id_continue*
+ ; 
+
+
 ID
  : ID_START ID_CONTINUE*
  ;
@@ -2468,7 +2505,7 @@ fragment LINE_JOINING
  ;
 
 fragment URI_NAME
- : ([a-zA-Z~0-9] | ('%' HEX_DIGIT)) ([a-zA-Z0-9-] | ('%' HEX_DIGIT))*
+ : ([a-zA-Z~0-9_] | ('%' HEX_DIGIT)) ([a-zA-Z0-9_-] | ('%' HEX_DIGIT))*
  ;
  
 fragment URI_STR

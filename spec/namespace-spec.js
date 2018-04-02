@@ -11,14 +11,14 @@ describe("Tosca Compiler syntax -> ", function() {
 
   	it("The compiler should accept correct uri with @IP",
 		function() { expect( app.parse(
-`namespace: http://232.34.123.0/tosca/ns/simple/yaml/1.2	
+`namespace: http://232.34.123.0/tosca/ns/sim.ple/yaml/1.2	
 `, 'test_namespace'	)).toEqual([]) });
 
 	
 	it("The compiler should not accept malformed uri",
 		function() { expect( app.parse(
 `namespace: http://plou.plif..d/ftg
-`, 'test_namespace'	)[0].text).toContain("mismatched input '.'") });
+`, 'test_namespace'	)[0].text).toContain("mismatched input '..'") });
   });
 
 });
