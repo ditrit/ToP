@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 by Bart Kiers
+ * Copyright (c) 2018 by Xavier Talon
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,13 +25,12 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  *
  * Project      : ditrit tosca parser; an ANTLR4 grammar for TOSCA OASIS
- *                https://github.com/bkiers/python3-parser
+ *                https://github.com/ditrit/ToPar
  * Developed by : reivaxt@gmail.com
  */
 grammar Tosca;
 
-// All comments that start with "///" are copy-pasted from
-// The TOSCA OASIS Reference: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.1/TOSCA-Simple-Profile-YAML-v1.1.html
+// The TOSCA OASIS Reference: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.2/TOSCA-Simple-Profile-YAML-v1.2.html
 
 tokens { INDENT, DEDENT }
 
@@ -182,8 +181,6 @@ tosca_input
  : ( NEWLINE | service_template )* EOF
  ;
  
-
-
 test_attributes : ( NEWLINE | attributes )* EOF ;
 test_properties : ( NEWLINE | properties )* EOF ;
 test_inputs : ( NEWLINE | inputs )* EOF ;
