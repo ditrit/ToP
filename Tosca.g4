@@ -617,7 +617,7 @@ node_requirement_assignment_clause
  : 'node' ':' id NEWLINE
  | 'relationship' ':' id NEWLINE
  | 'capability' ':' id NEWLINE
- | 'occurences' ':' range NEWLINE
+ | 'occurrences' ':' range NEWLINE
  | node_filter
  ;
 
@@ -1047,11 +1047,13 @@ capability_def_clause
  | descr
  | properties
  | attributes
+ | 'valid_source_types' ':' '[' ']' NEWLINE
  | 'valid_source_types' ':' '[' id (',' id)* ']' NEWLINE 
  | 'valid_source_types' ':' NEWLINE
 	 INDENT
 	   ( '-' INDENT id NEWLINE DEDENT)+
 	 DEDENT
+ | 'occurrences' ':' range NEWLINE
  ;
 
 requirement_defs
@@ -1076,7 +1078,7 @@ requirement_def
 requirement_def_clause
  : 'capability' ':' id NEWLINE
  | 'node' ':' id NEWLINE
- | 'occurences' ':' range NEWLINE
+ | 'occurrences' ':' range NEWLINE
  | 'relationship' ':' id NEWLINE
  | 'relationship' ':' NEWLINE
      INDENT
@@ -1966,7 +1968,7 @@ allkeywords
  | NODE_FILTER
  | NODE_TEMPLATES
  | NODE_TYPES
- | OCCURENCES
+ | OCCURRENCES
  | ON_SUCCESS
  | ON_FAILURE
  | OPERATION_HOST
@@ -2181,7 +2183,7 @@ NODE: 'node';
 NODE_FILTER: 'node_filter';
 NODE_TEMPLATES: 'node_templates';
 NODE_TYPES: 'node_types';
-OCCURENCES: 'occurences';
+OCCURRENCES: 'occurrences';
 ON_SUCCESS: 'on_success';
 ON_FAILURE: 'on_failure';
 OPERATION_HOST: 'operation_host';
