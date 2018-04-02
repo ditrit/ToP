@@ -180,7 +180,7 @@ tokens { INDENT, DEDENT }
 tosca_input
  : ( NEWLINE | service_template )* EOF
  ;
- 
+
 test_attributes : ( NEWLINE | attributes )* EOF ;
 test_properties : ( NEWLINE | properties )* EOF ;
 test_inputs : ( NEWLINE | inputs )* EOF ;
