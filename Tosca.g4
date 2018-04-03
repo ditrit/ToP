@@ -193,6 +193,8 @@ test_metadata : ( NEWLINE | metadata )* EOF ;
 test_capabilities : ( NEWLINE | capability_defs )* EOF ;
 test_requirements : ( NEWLINE | requirement_defs )* EOF ;
 test_interfaces : ( NEWLINE | interface_defs )* EOF ;
+test_artifacts : ( NEWLINE | artifact_defs )* EOF ;
+
 
 descr
  : 'description' ':' str NEWLINE?
@@ -572,13 +574,13 @@ filepath
   
 artifact_defs
  : 'artifacts' ':' NEWLINE
-      INDENT
-		artifact_def+
-      DEDENT 
+      ( INDENT
+		  artifact_def+
+        DEDENT )? 
  ;
 
 artifact_def
- : id ':' id NEWLINE 
+ : id ':' (URI|filepath) NEWLINE 
  | id ':' NEWLINE
     { let u = new UnorderedClauses(this);
       u.mandatory = ['type', 'file']; u.label = $id.text; }
@@ -590,10 +592,10 @@ artifact_def
 
 artifact_def_clause
  : 'type' ':' id  NEWLINE 
- | 'file' ':' short_str NEWLINE
+ | 'file' ':' (URI|filepath) NEWLINE
  | 'repository' ':' id NEWLINE
  | descr
- | 'deploy_path' ':' id NEWLINE
+ | 'deploy_path' ':' filepath NEWLINE
  ;
 
 node_requirement_assignments

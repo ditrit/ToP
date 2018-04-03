@@ -2,7 +2,7 @@ app = require("../topar.js");
 
 describe("Tosca Compiler syntax -> ", function() {
 	
-  describe("artifacts : ", function() {
+  describe("artifact_types : ", function() {
 
   	it("The compiler should accept an empty artifact_types section",
 		function() { expect( app.parse(`
