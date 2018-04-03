@@ -192,6 +192,7 @@ test_constraints : ( NEWLINE | constraints )* EOF ;
 test_metadata : ( NEWLINE | metadata )* EOF ;
 test_capabilities : ( NEWLINE | capability_defs )* EOF ;
 test_requirements : ( NEWLINE | requirement_defs )* EOF ;
+test_interfaces : ( NEWLINE | interface_defs )* EOF ;
 
 descr
  : 'description' ':' str NEWLINE?
@@ -1120,13 +1121,13 @@ interface_type_clause
  
 interface_defs
  : 'interfaces' ':' NEWLINE
-     INDENT
-       interface_def+
-     DEDENT
+     ( INDENT
+         interface_def+
+       DEDENT )?
  ;
 
 interface_def
- : id ':' NEWLINE
+ : id ':' NEWLINE 
      INDENT
      { let u = new UnorderedClauses(this); 
         u.label = $id.text; u.mandatory = [ 'type' ]; }
@@ -1136,16 +1137,16 @@ interface_def
  ;
 
 interface_def_clause
- : 'type' ':' id NEWLINE
- | inputs
- | operation_def
+ : 'type' ':' id NEWLINE 
+ | inputs 
+ | operation_def_intdef
  ;
 
 interface_defs_template
  : 'interfaces' ':' NEWLINE
-     INDENT
-       interface_def_template+
-	 DEDENT 
+     ( INDENT
+         interface_def_template+
+	   DEDENT )? 
  ;
 
 interface_def_template
@@ -1167,10 +1168,10 @@ interface_def_template_clause
  
 operation_def
  : id ':'
-     { ! (['derived_from', 'description', 'inputs', 'metadata', 'version'].includes($id.text)) }?
+     { ! (['derived_from', 'description', 'inputs', 'metadata', 'version' ].includes($id.text)) }?
      (URI | filepath) NEWLINE
  | id ':' NEWLINE
-     { ! (['derived_from', 'description', 'inputs', 'metadata', 'version'].includes($id.text)) }?
+     { ! (['derived_from', 'description', 'inputs', 'metadata', 'version' ].includes($id.text)) }?
      INDENT
      { let u = new UnorderedClauses(this); u.label = $id.text;}
        (operation_def_clause {u.add($operation_def_clause.ctx)})+
@@ -1178,6 +1179,20 @@ operation_def
      { u.check(); }	      
  ;
 
+operation_def_intdef
+ : id ':'
+     { ! (['type', 'inputs' ].includes($id.text)) }?
+     (URI | filepath) NEWLINE
+ | id ':' NEWLINE
+     { ! (['type', 'inputs' ].includes($id.text)) }?
+     INDENT
+     { let u = new UnorderedClauses(this); u.label = $id.text;}
+       (operation_def_clause {u.add($operation_def_clause.ctx)})+
+     DEDENT
+     { u.check(); }	      
+ ;
+
+ 
 operation_def_clause
  : descr
  | inputs
