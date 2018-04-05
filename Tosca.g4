@@ -218,7 +218,7 @@ service_template_clause
  | capability_types			// OK
  | interface_types			// OK
  | relationship_types
- | node_types
+ | node_types				// OK
  | group_types
  | policy_types
  | topology_template
@@ -271,9 +271,9 @@ substitution_mapping_clause
 
 properties_mapping
  : 'properties' ':' NEWLINE
-     INDENT
-       property_mapping+
-     DEDENT
+     ( INDENT
+         property_mapping+
+       DEDENT )?
  ;
 
 property_mapping
@@ -296,9 +296,9 @@ property_mapping_clause
 
 attributes_mapping
  : 'attributes' ':' NEWLINE
-     INDENT
-       attribute_mapping+
-     DEDENT
+     ( INDENT
+         attribute_mapping+
+       DEDENT )?
  ;
 
 attribute_mapping
@@ -321,9 +321,9 @@ attribute_mapping_clause
 
 capabilities_mapping
  : 'capabilities' ':' NEWLINE
-     INDENT
-       capability_mapping+
-     DEDENT
+     ( INDENT
+         capability_mapping+
+       DEDENT )?
  ;
 
 capability_mapping
@@ -337,61 +337,61 @@ capability_mapping
 capability_mapping_clause
  : 'mapping' ':' '[' id ',' id ']' NEWLINE
  | 'properties' ':' 
-     INDENT
+     ( INDENT
        ( id ':' value )+
-     DEDENT
+       DEDENT )?
  | 'attributes' ':' 
-     INDENT
+     ( INDENT
        ( id ':' value )+
-     DEDENT
+       DEDENT )?
  ;
 
 requirements_mapping
  : 'requirements' ':' NEWLINE
-     INDENT
-       capability_mapping+
-     DEDENT
+     ( INDENT
+         capability_mapping+
+       DEDENT )?
  ;
 
 requirement_mapping
  : id ':' '[' id ',' id ']'
  | id ':' NEWLINE
-     INDENT
-       capability_mapping_clause
-     DEDENT
+     ( INDENT
+         capability_mapping_clause
+       DEDENT )?
  ;
 
 requirement_mapping_clause
  : 'mapping' ':' '[' id ',' id ']' NEWLINE
  | 'properties' ':' 
-     INDENT
+     ( INDENT
        ( id ':' value )+
-     DEDENT
+     DEDENT )?
  | 'attributes' ':' 
-     INDENT
+     ( INDENT
        ( id ':' value )+
-     DEDENT
+     DEDENT )?
  ;
 
 interfaces_mapping
  : 'interfaces' ':' NEWLINE
-   INDENT
+   (INDENT
      interface_mapping
-   DEDENT
+    DEDENT )?
  ;
 
 interface_mapping
  : id ':' NEWLINE
-    INDENT
+    (INDENT
       ( id ':' id )+
-    DEDENT
+    DEDENT )?
  ;
 
 node_templates
  : 'node_templates' ':' NEWLINE
-	 INDENT
+	 (INDENT
 		node_template+ 
-	 DEDENT
+	 DEDENT )?
  ;
 
 node_template
@@ -409,9 +409,9 @@ node_template_clause
  | descr
  | 'directives' ':' '[' short_str (',' short_str)* ']' NEWLINE 
  | 'directives' ':' NEWLINE
-     INDENT
+     ( INDENT
        ('-' INDENT short_str NEWLINE DEDENT)+
-	 DEDENT
+	 DEDENT )?
  | entity_metadata
  | properties
  | attributes
@@ -426,9 +426,9 @@ node_template_clause
 
 relationship_templates
  : 'relationship_templates' ':' NEWLINE
-	 INDENT
+	 ( INDENT
 		relationship_template+ 
-	 DEDENT
+	 DEDENT )?
  ;
 
 relationship_template
@@ -627,9 +627,9 @@ node_requirement_assignment_clause
 
 properties
  : 'properties' ':' NEWLINE
-     INDENT
+     ( INDENT
        property+
-     DEDENT
+     DEDENT )?
  ;
  
 property
@@ -657,9 +657,9 @@ property_clause
 
 property_assignments
  : 'properties' ':'
-	 INDENT
+	 ( INDENT
 		(property_assignment )+
-	 DEDENT 
+	 DEDENT )? 
  ;
 
 /* Forme étendue prévue dans la norme pour les attributs mais 
@@ -685,9 +685,9 @@ property_assignment_clause
 
 attributes
  : 'attributes' ':' NEWLINE
-     INDENT
+     ( INDENT
        attribute+
-     DEDENT
+     DEDENT )?
  ;
  
 attribute
@@ -711,9 +711,10 @@ attribute_clause
 
 attribute_assignments
  : 'attributes' ':' NEWLINE
-	 INDENT
+	 ( INDENT
 		attribute_assignment+
-	 DEDENT ;
+	 DEDENT)? 
+ ;
 
 attribute_assignment
  : id ':' value NEWLINE
@@ -729,9 +730,9 @@ attribute_assignment
 
 capability_assignments
  : 'capabilities' ':' NEWLINE
-	 INDENT
+	 ( INDENT
 		capability_assignment+
-	 DEDENT 
+	 DEDENT )? 
  ;
 	
 capability_assignment
@@ -756,23 +757,23 @@ attribute_assignment_clause
 
 inputs
  : 'inputs' ':' NEWLINE
-     INDENT
+     ( INDENT
        property+
-     DEDENT
+     DEDENT )?
  ;
 
 input_assignments
  : 'inputs' ':' NEWLINE
-     INDENT
+     ( INDENT
        property_assignment+
-     DEDENT
+     DEDENT )?
  ;
  
 input_parameters
  : 'inputs' ':' NEWLINE
-     INDENT
+     ( INDENT
        input_parameter+
-     DEDENT
+     DEDENT )?
  ;
  
 input_parameter
@@ -828,9 +829,9 @@ output_parameter_clause
  
 constraints
  : 'constraints' ':' NEWLINE
-		INDENT
+		( INDENT
 			( '-' INDENT constraint_clause NEWLINE? DEDENT)+
-		DEDENT
+		DEDENT )?
  ;
 
 constraint_clause
@@ -855,12 +856,12 @@ entry_decl
 
 entry_detailed
  : 'entry_schema' ':' NEWLINE
-     { let u = new UnorderedClauses(this);
+     ( { let u = new UnorderedClauses(this);
        u.mandatory = ['type'] }
 	 INDENT
 	   (entry_clause {u.add($entry_clause.ctx) } )+
 	 DEDENT
-	 { u.check(); }
+	 { u.check(); } )?
  ;
 
 entry_clause
@@ -874,10 +875,10 @@ entry_clause
 entity_metadata
  : 'metadata' ':' NEWLINE
      { let u = new UnorderedClauses(this); u.label = 'metadata' }
-     INDENT
+     ( INDENT
        ( entity_metadata_clause 
          {u.add($entity_metadata_clause.ctx) })+
-     DEDENT
+     DEDENT )?
  	 { u.check(); }
  ;
 
@@ -895,7 +896,7 @@ entity_clause
 node_types
  : 'node_types' ':' NEWLINE
 	 ( INDENT
-		node_types+
+		node_type+
 	   DEDENT )?
  ;
 
@@ -909,7 +910,8 @@ node_type
  ;
 
 node_type_clause
- : properties
+ : entity_clause
+ | properties
  | attributes
  | capability_defs
  | requirement_defs
@@ -935,14 +937,15 @@ relationship_type
  ;
 
 relationship_type_clause
- : properties
+ : entity_clause
+ | properties
  | attributes
  | interface_defs
- | 'valid_target_types' ':' '[' id (',' id)* ']' NEWLINE
+ | 'valid_target_types' ':' '[' NEWLINE? id (',' NEWLINE? id)* NEWLINE? ']' NEWLINE
  | 'valid_target_types' ':' NEWLINE
-     INDENT
+     (INDENT
        ( '-' INDENT id NEWLINE DEDENT)+
-     DEDENT
+     DEDENT)?
  | declarative_rel_workflows
  ;
 
@@ -1230,14 +1233,14 @@ operation_artifact_def
  ; 
  
 group_types
- : 'group_types' ':'
+ : 'group_types' ':' NEWLINE
 	 ( INDENT
-	     group_type+
+	     group_type_item+
 	   DEDENT )?
  ;
 
-group_type
- : id ':' NEWLINE
+group_type_item
+ : id ':' NEWLINE 
      INDENT
      { let u = new UnorderedClauses(this); u.label = $id.text; }
 	   (group_type_clause {u.add($group_type_clause.ctx)})+
@@ -1246,15 +1249,12 @@ group_type
  ;
 
 group_type_clause
- : 'derived_from' ':' id NEWLINE
- | descr
- | entity_metadata
- | 'version' ':' id NEWLINE
+ : entity_clause
  | properties
  | capability_defs
  | requirement_defs
  | interface_defs
- | 'members' ':' '[' id (',' id)* ']' NEWLINE
+ | 'members' ':' NEWLINE? '[' NEWLINE? id (',' NEWLINE? id)* NEWLINE? ']' NEWLINE
  | 'members' ':' NEWLINE
      INDENT
       ('-' INDENT id NEWLINE DEDENT )+
@@ -1263,9 +1263,9 @@ group_type_clause
 
 group_defs
  : 'groups' ':' NEWLINE	
-	 INDENT
+	 ( INDENT
 		group_def+
-	 DEDENT
+	 DEDENT )?
  ;
 	
 group_def
@@ -1311,10 +1311,7 @@ policy_type
  ;
 
 policy_type_clause
- : 'derived_from' ':' id NEWLINE
- | descr
- | entity_metadata
- | 'version' ':' id NEWLINE
+ : entity_clause
  | properties
  | 'targets' ':' '[' value (',' value)* ']' NEWLINE
  | 'targets' ':' NEWLINE
@@ -1326,9 +1323,10 @@ policy_type_clause
 
 policy_defs
  : 'policies' ':' NEWLINE
-	 INDENT
+	 ( INDENT
 		policy_def+
-	 DEDENT;
+	 DEDENT)?
+ ;
 
 policy_def
  : '-' INDENT id ':' NEWLINE
@@ -1407,11 +1405,11 @@ target_filter_clause
 
 node_filter
  : 'node_filter' ':' NEWLINE
-     INDENT
+     ( INDENT
      { let u = new UnorderedClauses(this); }
 	   (node_filter_clause {u.add($node_filter_clause.ctx)} )+     
      DEDENT
-	 { u.check(); }	 
+	 { u.check(); })?	 
  ;
 
 node_filter_clause
@@ -1421,9 +1419,9 @@ node_filter_clause
 
 properties_filter
  : 'properties' ':' NEWLINE
-     INDENT
+     ( INDENT
 	   ( property_filter )+
-	 DEDENT
+	 DEDENT )?
  ;
 
 property_filter
@@ -1433,9 +1431,9 @@ property_filter
 
 capabilities_filter
  : 'capabilities' ':' NEWLINE
-	  INDENT
+	  ( INDENT
 	    capability_filter+
-	  DEDENT
+	  DEDENT )?
  ;
 
 capability_filter
@@ -1447,9 +1445,10 @@ capability_filter
  
 declarative_node_workflows
  : 'workflows' ':' NEWLINE
-	INDENT
+	( INDENT
 		declarative_node_workflow+
-	DEDENT;
+	DEDENT)?
+ ;
 
 declarative_node_workflow
  : id ':' NEWLINE
@@ -1470,10 +1469,11 @@ declarative_node_workflow_clause
  ;
 
 declarative_rel_workflows
- : 'workflows' ':' NEWLINE
-	INDENT
+ : ('workflow'|'workflows') ':' NEWLINE
+	( INDENT
 		declarative_rel_workflow+
-	DEDENT;
+	DEDENT)?
+ ;
 
 declarative_rel_workflow
  : id ':' NEWLINE
@@ -1503,9 +1503,9 @@ workflow_source_weavings
  
 workflow_target_weavings
  : 'target_weaving' ':' NEWLINE
-	 INDENT
+	 ( INDENT
 		workflow_target_weaving +
-	 DEDENT
+	 DEDENT) ?
  ;
  
 workflow_source_weaving
@@ -1535,14 +1535,14 @@ workflow_target_weaving
 workflow_target_weaving_clause
  : ('after'|'before') ':' workflow_state NEWLINE
  | ('wait_source'|'after_source') ':' id NEWLINE
- | 'activity' ':' id
+ | 'activity' ':' id NEWLINE
  ;
 
 workflow_preconditions
  : 'preconditions' ':' NEWLINE
-	 INDENT
+	 (INDENT
 		workflow_precondition+
-	 DEDENT 
+	 DEDENT)? 
  ;
 
 workflow_precondition
@@ -1562,16 +1562,16 @@ workflow_precondition_clause
 
 workflow_condition_clauses
  : 'condition' ':' NEWLINE
-  	 INDENT
+  	 (INDENT
   	   workflow_condition_clause+
-  	 DEDENT
+  	 DEDENT)?
 ;
 
 workflow_filter_clauses
  : 'filter' ':' NEWLINE
-  	 INDENT
+  	 (INDENT
   	   workflow_condition_clause+
-  	 DEDENT
+  	 DEDENT)?
 ;
 
 workflow_condition_clause
@@ -1614,17 +1614,17 @@ workflow_assertion
  ;
 
 workflow_steps
- : 'steps' ':'
-	 INDENT
+ : 'steps' ':' NEWLINE
+	 (INDENT
 	   workflow_step+
-	 DEDENT
+	 DEDENT)?
  ;
 
 workflow_step
  : id ':' NEWLINE
-    INDENT
+    (INDENT
       workflow_step_clause+
-    DEDENT
+    DEDENT)?
  ;
  
 workflow_step_clause
@@ -1635,42 +1635,43 @@ workflow_step_clause
  | 'operation_host' ':' id  NEWLINE
  | 'on_success' ':' '[' id (',' id)* ']' NEWLINE 
  | 'on_success' ':' NEWLINE
-     INDENT
+     (INDENT
 	   ('-' INDENT id NEWLINE DEDENT )+
-     DEDENT
+     DEDENT)?
  | 'on_failure' ':' '[' id (',' id)* ']' NEWLINE
  | 'on_failure' ':' NEWLINE
-     INDENT
+     (INDENT
 	   ('-' INDENT id NEWLINE DEDENT)+
-     DEDENT
+     DEDENT)?
  ;
 
 workflow_activities
- : 'activities' ':' '[' workflow_activity (',' workflow_activity )* ']' NEWLINE 
+ : 'activities' ':' '[' NEWLINE? workflow_activity (',' NEWLINE? workflow_activity )* NEWLINE? ']' NEWLINE 
  | 'activities' ':' NEWLINE 
-  	INDENT
+  	(INDENT
   		('-' INDENT workflow_activity NEWLINE DEDENT)+
-  	DEDENT;
+  	DEDENT)?
+ ;
 
 workflow_activity
- : 'delegate' ':' id NEWLINE 
- | 'set_state' ':' workflow_state NEWLINE
- | 'call_operation' ':' id NEWLINE
- | 'inline' ':' id NEWLINE
+ : 'delegate' ':' id
+ | 'set_state' ':' workflow_state
+ | 'call_operation' ':' id
+ | 'inline' ':' id
  ; 
 
 imperative_workflows
  : 'workflows' ':' NEWLINE
-	 INDENT
+	 (INDENT
 		imperative_workflow+
-	 DEDENT
+	 DEDENT)?
  ;
 
 imperative_workflow
  : id ':' NEWLINE
-     INDENT
+     (INDENT
        (imperative_workflow_clause )+
-     DEDENT
+     DEDENT)?
  ;
 
 imperative_workflow_clause
@@ -1684,7 +1685,7 @@ imperative_workflow_clause
 workflow_state
  : id
        { [ 'initial', 'creating', 'created', 'configuring', 'configured',
-             'starting', 'started', 'stopping', 'deleting', 
+             'starting', 'started', 'stopping', 'stopped', 'deleting', 'deleted',
              'error' ].includes($id.text) }? 
              // 'stopped' et 'available' plus presents en 1.2
  ;
