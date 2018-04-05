@@ -1,0 +1,3 @@
+[submodule "normative_types"]
+	path = normative_types
+	url = https://github.com/ditrit/normative_types.git
