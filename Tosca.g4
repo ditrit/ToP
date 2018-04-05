@@ -455,9 +455,10 @@ relationship_template_clause
 tosca_definitions_version
  : 'tosca_definitions_version' ':' URI NEWLINE
    { [ 'http://docs.oasis-open.org/tosca/ns/simple/yaml/1.2',
-       'http://docs.oasis-open.org/tosca/ns/simple/yaml/1.1' ].includes($URI.text) }?
+       'http://docs.oasis-open.org/tosca/ns/simple/yaml/1.1',
+       'http://docs.oasis-open.org/tosca/ns/simple/yaml/1.0' ].includes($URI.text) }?
  | 'tosca_definitions_version' ':' ID NEWLINE
-   { [ 'tosca_simple_yaml_1_2', 'tosca_simple_yaml_1_1' ].includes($ID.text) }?
+   { [ 'tosca_simple_yaml_1_2', 'tosca_simple_yaml_1_1', 'tosca_simple_yaml_1_0' ].includes($ID.text) }?
  ;
 
 namespace
@@ -2056,6 +2057,7 @@ values_tokens
  | ID
  | STRING_LITERAL
  | FLOAT_NUMBER
+ | INT_DOT_INT
  | DECIMAL_INTEGER
  | OCT_INTEGER
  | HEX_INTEGER
