@@ -1,8 +1,9 @@
 # ToPar
 ToPar stands for *Tosca Parser* and aims to be a fully compliant and up-to-date Tosca OASIS normative parser 
 (cf [TOSCA Simple Profile in YAML Version 1.2](http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.2/TOSCA-Simple-Profile-YAML-v1.2.pdf)).
+All features defined in the TOSCA 1.2 standard are implemented with the exception of *'dsl_definitions'*.
 
-Currently, ToPar features are limited to syntax validation.
+Currently, ToPar is limited to syntax validation.
 It is based on an ANTLR 4 grammar. The parser is built using the JavaSCript target.
 
 ## Prerequisites
@@ -20,5 +21,11 @@ You need to install :
 3. Execute tests
 <pre>jasmine</pre>
 
+## Tests
+Tests are implemented with *jasmine* and are located in the *spec* directory.
+Normative types (to be updated in 1.2) come from the dedicated [normative_types](https://github.com/ditrit/normative_types) ditrit project.
+
+The tests (a little over 400) cover the entire grammar as defined in the standard and all the examples provided in the latter.
+
 ## Caution
-This project is not production ready at all and has not been tested. The API may change at each commit.
+ToPar is currently only a syntax validator and has not been tested in production. 
