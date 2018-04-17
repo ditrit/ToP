@@ -16,7 +16,7 @@ describe("Tosca Compiler syntax -> ", function() {
 
   	it("The compiler should not accept incorrect uri value",
 		function() { expect( app.parse(
-`tosca_definitions_version: http://docs.oasis-open.org/tosca/ns/simple/yaml/1.0	
+`tosca_definitions_version: http://docs.oasis-open.org/tosca/ns/simple/yaml/0.9	
 `, 'tosca_input'					)[0].text).toContain("failed predicate") });
 
 	

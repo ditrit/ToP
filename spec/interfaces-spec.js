@@ -36,7 +36,6 @@ interfaces:
 interfaces:
 
   MyConfigure:
-    derived_from: tosca.interfaces.relationship.Configure
     inputs:
       mode:
         type: string

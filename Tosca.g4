@@ -124,7 +124,7 @@ tokens { INDENT, DEDENT }
   
     constructor(thisparser) {
     this.items = {};
-    this.mandatory = [];
+    this.mandatory =  [[]];
     this.label = "";
     this.thisparser = thisparser;
     
@@ -141,15 +141,46 @@ tokens { INDENT, DEDENT }
     };
 
     setMandatory(mandatory) {
-          this.mandatory = mandatory; 
+          var ret = null;
+          if (isString(mandatory)) {
+            this.mandatory = [[ mandatory ]]
+          } else if (!(mandatory instanceof Array) || mandatory.length == 0) {
+            this.mandatory = [[]]
+          } else if (!(mandatory[0] instanceof Array)) { 
+            this.mandatory = [ mandatory ]
+          } else {
+            this.mandatory = mandatory;
+          }
     }
 
+    checkMandatory() {
+      	  var absent = []
+      	  var one_ok = (this.mandatory == [[]] ) ? true : false
+      	  
+      	  for (let or_item of this.mandatory) {
+      	    let clause_absent = []
+      	    let clause_ok = true
+      	    for (let item of or_item) {
+      	      if (!(item in this.items)) {
+      	        clause_absent.push(item)
+      	        clause_ok = false
+      	      }
+      	    }
+      	    absent.push(clause_absent)
+            one_ok = (one_ok) ? one_ok : clause_ok 
+      	  }
+      	  let expected = absent.map(x => x.join("','")).join("' or '");
+      	  return { 'ok': one_ok, 'message': expected } 
+    }
+    
     check() {
-          for (let item of this.mandatory) 
-     	    if (!(item in this.items)) 
-     	      this.thisparser.notifyErrorListeners("No '" + item + "' value provided" + 
+          let expected = this.checkMandatory()
+          if (! expected.ok) {
+            this.thisparser.notifyErrorListeners(
+               "No '" + expected.message + "' value provided" + 
      	        (this.label.length >0 ? " for '" + this.label + "'" : ""));
-    	  for (let i in this.items) 
+    	  }
+     	  for (let i in this.items) 
      	    if (this.items[i] > 1) 
      	      this.thisparser.notifyErrorListeners("The clause '" + i + "' is duplicated '" + 
      	        (this.label.length >0 ? " in '" + this.label + "'" : "")); 
@@ -194,10 +225,12 @@ test_capabilities : ( NEWLINE | capability_defs )* EOF ;
 test_requirements : ( NEWLINE | requirement_defs )* EOF ;
 test_interfaces : ( NEWLINE | interface_defs )* EOF ;
 test_artifacts : ( NEWLINE | artifact_defs )* EOF ;
+test_short_str : ( NEWLINE | short_str )* EOF;
+test_mlstr : ( NEWLINE | str )* EOF;
 
 
 descr
- : 'description' ':' str NEWLINE?
+ : 'description' ':' str? NEWLINE?
  ;
 
 service_template
@@ -208,29 +241,29 @@ service_template
  ;
  
 service_template_clause
- : namespace 				// OK
- | metadata					// OK
- | repositories				// OK
- | file_imports				// OK
- | descr 					// OK
- | artifact_types			// OK
- | data_types				// OK
- | capability_types			// OK
- | interface_types			// OK
+ : namespace 				
+ | metadata					
+ | repositories				
+ | file_imports				
+ | descr 					
+ | artifact_types			
+ | data_types				
+ | capability_types			
+ | interface_types			
  | relationship_types
- | node_types				// OK
- | group_types
- | policy_types
+ | node_types				
+ | group_types				
+ | policy_types				
  | topology_template
  ;
 
 topology_template
  : 'topology_template' ':' NEWLINE
-      INDENT
-      { let u = new UnorderedClauses(this); u.label = 'topology_template'; }
-        (topology_template_clause {u.add($topology_template_clause.ctx)} )+
-      DEDENT
-	  { u.check(); }
+      ( INDENT
+        { let u = new UnorderedClauses(this); u.label = 'topology_template'; }
+          (topology_template_clause {u.add($topology_template_clause.ctx)} )+
+        DEDENT
+	    { u.check(); } )?
  ;
 
 topology_template_clause
@@ -247,18 +280,18 @@ topology_template_clause
  
 substitution_mapping 
  : 'substitution_mappings' ':' NEWLINE
-   INDENT
-     substitution_mapping_node_type+
-   DEDENT
+   ( INDENT
+       substitution_mapping_node_type+
+     DEDENT )?
  ;
 
 substitution_mapping_node_type
- : 'node_type' ':' NEWLINE 
-      INDENT
-      { let u = new UnorderedClauses(this); u.label = 'node_type substitution'; }
-        (substitution_mapping_clause {u.add($substitution_mapping_clause.ctx)})+
-      DEDENT
-      { u.check(); }
+ : 'node_type' ':' id NEWLINE 
+      ( INDENT
+        { let u = new UnorderedClauses(this); u.label = 'node_type substitution'; }
+          (substitution_mapping_clause {u.add($substitution_mapping_clause.ctx)})+
+        DEDENT
+        { u.check(); } )?
  ;
  
 substitution_mapping_clause
@@ -278,9 +311,9 @@ properties_mapping
 
 property_mapping
  : id ':' value NEWLINE
- | id ':' '[' id ']'
- | id ':' '[' id ',' id ']'
- | id ':' '[' id ',' id ',' id ']'
+ | id ':' '[' id ']' NEWLINE
+ | id ':' '[' id ',' id ']' NEWLINE
+ | id ':' '[' id ',' id ',' id ']' NEWLINE
  | id ':' NEWLINE
      INDENT
        property_mapping_clause
@@ -291,7 +324,7 @@ property_mapping_clause
  : 'mapping' ':' id NEWLINE
  | 'mapping' ':' '[' id ',' id ']' NEWLINE
  | 'mapping' ':' '[' id ',' id ',' id ']' NEWLINE
- | 'value' ':' value NEWLINE
+ | 'value' ':' value NEWLINE?
  ;
 
 attributes_mapping
@@ -303,9 +336,9 @@ attributes_mapping
 
 attribute_mapping
  : id ':' value NEWLINE
- | id ':' '[' id ']'
- | id ':' '[' id ',' id ']'
- | id ':' '[' id ',' id ',' id ']'
+ | id ':' '[' id ']' NEWLINE
+ | id ':' '[' id ',' id ']' NEWLINE
+ | id ':' '[' id ',' id ',' id ']' NEWLINE
  | id ':' NEWLINE
      INDENT
        attribute_mapping_clause
@@ -327,7 +360,7 @@ capabilities_mapping
  ;
 
 capability_mapping
- : id ':' '[' id ',' id ']'
+ : id ':' '[' id ',' id ']' NEWLINE
  | id ':' NEWLINE
      INDENT
        capability_mapping_clause
@@ -336,13 +369,13 @@ capability_mapping
 
 capability_mapping_clause
  : 'mapping' ':' '[' id ',' id ']' NEWLINE
- | 'properties' ':' 
+ | 'properties' ':' NEWLINE
      ( INDENT
-       ( id ':' value )+
+       ( id ':' value NEWLINE? )+
        DEDENT )?
- | 'attributes' ':' 
+ | 'attributes' ':' NEWLINE
      ( INDENT
-       ( id ':' value )+
+       ( id ':' value NEWLINE? )+
        DEDENT )?
  ;
 
@@ -354,7 +387,7 @@ requirements_mapping
  ;
 
 requirement_mapping
- : id ':' '[' id ',' id ']'
+ : id ':' '[' id ',' id ']' NEWLINE
  | id ':' NEWLINE
      ( INDENT
          capability_mapping_clause
@@ -363,13 +396,13 @@ requirement_mapping
 
 requirement_mapping_clause
  : 'mapping' ':' '[' id ',' id ']' NEWLINE
- | 'properties' ':' 
+ | 'properties' ':' NEWLINE
      ( INDENT
-       ( id ':' value )+
+       ( id ':' value NEWLINE? )+
      DEDENT )?
- | 'attributes' ':' 
+ | 'attributes' ':' NEWLINE
      ( INDENT
-       ( id ':' value )+
+       ( id ':' value NEWLINE? )+
      DEDENT )?
  ;
 
@@ -382,9 +415,9 @@ interfaces_mapping
 
 interface_mapping
  : id ':' NEWLINE
-    (INDENT
-      ( id ':' id )+
-    DEDENT )?
+    INDENT
+      ( id ':' id NEWLINE )+
+    DEDENT
  ;
 
 node_templates
@@ -398,14 +431,14 @@ node_template
  : id ':' NEWLINE
      INDENT
      { let u = new UnorderedClauses(this);
-       u.mandatory = ['type']; u.label = $id.text }
+       u.setMandatory( [['type'],['copy']]); u.label = $id.text }
        (node_template_clause {u.add($node_template_clause.ctx)} )+
      DEDENT
  	 { u.check(); }
  ;
  
 node_template_clause
- : 'type' ':' id NEWLINE
+ : 'type' ':' idtype NEWLINE
  | descr
  | 'directives' ':' '[' short_str (',' short_str)* ']' NEWLINE 
  | 'directives' ':' NEWLINE
@@ -413,8 +446,8 @@ node_template_clause
        ('-' INDENT short_str NEWLINE DEDENT)+
 	 DEDENT )?
  | entity_metadata
- | properties
- | attributes
+ | property_assignments
+ | attribute_assignments
  | node_requirement_assignments
  | capability_assignments
  | interface_defs_template
@@ -435,7 +468,7 @@ relationship_template
  : id ':' NEWLINE
      INDENT
      { let u = new UnorderedClauses(this);
-       u.mandatory = ['type']; u.label = $id.text }
+       u.setMandatory([['type'],['copy']]); u.label = $id.text }
        (relationship_template_clause 
          {u.add($relationship_template_clause.ctx)} )+
      DEDENT
@@ -443,11 +476,11 @@ relationship_template
  ;
  
 relationship_template_clause
- : 'type' ':' id NEWLINE
+ : 'type' ':' idtype NEWLINE
  | descr
  | entity_metadata
- | properties
- | attributes
+ | property_assignments
+ | attribute_assignments
  | interface_defs_template
  | 'copy' ':' id NEWLINE
  ;
@@ -501,7 +534,7 @@ repository_short
 repository_detail
  : id ':' NEWLINE
      { let u = new UnorderedClauses(this);
-       u.mandatory = ['url'];
+       u.setMandatory( ['url']);
        u.label = $id.text }
 	INDENT
 	  ( repository_clause {u.add($repository_clause.ctx) } )+
@@ -520,24 +553,26 @@ repository_url
  ;
 
 repository_cred
- : 'credential' ':' '{' NEWLINE?
-     { let v = new UnorderedClauses(this); v.mandatory = ['token'];}
-     ele1=cred_ele {v.add($ele1.ctx); } 
-     (',' NEWLINE? ele2=cred_ele {v.add($ele2.ctx); })* 
-     NEWLINE? '}' { v.check(); } NEWLINE 
- | 'credential' ':' NEWLINE
-    { let u = new UnorderedClauses(this); u.mandatory = ['token'];}
-	INDENT
-	  ( cred_ele {u.add($cred_ele.ctx) } )+
-	DEDENT
-	{ u.check(); }
+ : id ':' 
+     '{' NEWLINE? { $id.text == 'credential' }?
+        { let v = new UnorderedClauses(this); 
+          v.setMandatory( ['token']); v.label = 'credential' }
+        cred_clause {v.add($cred_clause.ctx) }  
+          (',' NEWLINE? cred_clause {v.add($cred_clause.ctx) } )* 
+     NEWLINE? '}' NEWLINE 
+ | id ':' NEWLINE { $id.text == 'credential' }?
+     { let u = new UnorderedClauses(this); 
+      u.setMandatory( ['token']); u.label = 'credential' }
+	 INDENT
+	   ( cred_clause {u.add($cred_clause.ctx)} NEWLINE )+
+	 DEDENT
+	 { u.check(); }
  ;
 
-cred_ele
- : 'token' ':' short_str  NEWLINE?
- | 'protocol' ':' id  NEWLINE?
- | 'token_type' ':' id NEWLINE?
- | 'user' ':' id NEWLINE?
+cred_clause
+ : id 
+	 { ['protocol', 'token', 'token_type', 'user'].includes($id.text) }?
+   ':' short_str
  ;
 
 file_imports
@@ -552,7 +587,7 @@ file_import
  | '-' INDENT id ':' (URI| filepath) NEWLINE DEDENT 
  | '-' INDENT id ':' NEWLINE
          { let u = new UnorderedClauses(this); 
-           u.mandatory = ['file']; u.label = $id.text}
+           u.setMandatory( ['file']); u.label = $id.text}
 	     INDENT
 	       ( file_import_clause {u.add($file_import_clause.ctx) } )+
 	     DEDENT
@@ -585,7 +620,7 @@ artifact_def
  : id ':' (URI|filepath) NEWLINE 
  | id ':' NEWLINE
     { let u = new UnorderedClauses(this);
-      u.mandatory = ['type', 'file']; u.label = $id.text; }
+      u.setMandatory( ['type', 'file']); u.label = $id.text; }
  	INDENT
  	  (artifact_def_clause {u.add($artifact_def_clause.ctx) })+
 	DEDENT
@@ -593,7 +628,7 @@ artifact_def
  ;
 
 artifact_def_clause
- : 'type' ':' id  NEWLINE 
+ : 'type' ':' idtype  NEWLINE 
  | 'file' ':' (URI|filepath) NEWLINE
  | 'repository' ':' id NEWLINE
  | descr
@@ -622,9 +657,22 @@ node_requirement_assignment
 node_requirement_assignment_clause
  : 'node' ':' id NEWLINE
  | 'relationship' ':' id NEWLINE
+ | 'relationship' ':' NEWLINE
+     INDENT
+     { let u = new UnorderedClauses(this); }
+       ( node_requirement_ass_rel_clause 
+         {u.add($node_requirement_ass_rel_clause.ctx)})+
+     DEDENT
+     { u.check(); }	 
  | 'capability' ':' id NEWLINE
  | 'occurrences' ':' range NEWLINE
  | node_filter
+ ;
+
+node_requirement_ass_rel_clause
+ : 'type' ':'  idtype NEWLINE
+ | property_assignments
+ | interface_defs_template
  ;
 
 properties
@@ -637,7 +685,7 @@ properties
 property
  : id ':' NEWLINE 
      { let u = new UnorderedClauses(this);
-       u.mandatory = ['type']; u.label = $id.text; }
+       u.setMandatory( ['type']); u.label = $id.text; }
  	 INDENT
  	   (property_clause {u.add($property_clause.ctx) } )+
  	 DEDENT
@@ -645,7 +693,7 @@ property
  ;
 
 property_clause
- : 'type' ':' id  NEWLINE               
+ : 'type' ':' idtype  NEWLINE               
  | descr  
  | constraints 					        
  | 'required' ':' bool  NEWLINE         
@@ -658,7 +706,7 @@ property_clause
 // | 'external-schema:' str NEWLINE? a priori erreur dans le doc : le schema est defini en contrainte
 
 property_assignments
- : 'properties' ':'
+ : 'properties' ':' NEWLINE
 	 ( INDENT
 		(property_assignment )+
 	 DEDENT )? 
@@ -668,12 +716,12 @@ property_assignments
  * pas pour les propriétés. A priori incohérent, nous 
  * l'autorisons aussi pour les propriétés */
 property_assignment
- : id ':' value NEWLINE
- | id ':' value_expr NEWLINE
+ : id ':' value_expr NEWLINE
+ | id ':' value NEWLINE
  | id ':' NEWLINE
 	 INDENT
      { let u = new UnorderedClauses(this);
-       u.mandatory = ['value']; u.label = $id.text; }
+       u.setMandatory( ['value']); u.label = $id.text; }
 	  (property_assignment_clause {u.add($property_assignment_clause.ctx)} )+
  	 DEDENT
  	 { u.check(); }
@@ -681,8 +729,8 @@ property_assignment
 
 property_assignment_clause
  : descr
- | 'value' ':' value
  | 'value' ':' value_expr
+ | 'value' ':' value
  ;
 
 attributes
@@ -695,7 +743,7 @@ attributes
 attribute
  : id ':' NEWLINE 
      { let u = new UnorderedClauses(this);
-       u.mandatory = ['type']; u.label = $id.text }
+       u.setMandatory( ['type']); u.label = $id.text }
  	 INDENT
  	   (attribute_clause {u.add($attribute_clause.ctx) } )+
  	 DEDENT
@@ -703,7 +751,7 @@ attribute
  ;
 
 attribute_clause
- : 'type' ':' id  NEWLINE               
+ : 'type' ':' idtype  NEWLINE               
  | descr        
  | 'default' ':' value  NEWLINE?    
  | 'status' ':' id NEWLINE
@@ -724,7 +772,7 @@ attribute_assignment
  | id ':' NEWLINE 
 	 INDENT
      { let u = new UnorderedClauses(this);
-       u.mandatory = ['value']; u.label = $id.text; }
+       u.setMandatory( ['value']); u.label = $id.text; }
 	  (attribute_assignment_clause {u.add($attribute_assignment_clause.ctx)} )+
  	 DEDENT
  	 { u.check(); }
@@ -779,46 +827,34 @@ input_parameters
  ;
  
 input_parameter
- : 'name' ':' id NEWLINE 
+ : id ':' NEWLINE 
      { let u = new UnorderedClauses(this);
-       u.mandatory = ['type']; u.label = $id.text }
+       u.setMandatory( ['type']); u.label = $id.text }
  	 INDENT
- 	   (input_parameter_clause {u.add($input_parameter_clause.ctx) } )+
+ 	   (io_parameter_clause {u.add($io_parameter_clause.ctx) } )+
  	 DEDENT
  	 { u.check(); }
- ;
-
-input_parameter_clause
- : 'type' ':' id  NEWLINE               
- | descr        
- | constraints 					        
- | 'required' ':' bool  NEWLINE         
- | 'default' ':' value  NEWLINE?         
- | 'status' ':' ID NEWLINE
-       { ['supported', 'unsupported', 'experimental', 'deprecated'].includes($ID.text) }?
- | entry_decl
- | 'value' ':' value
  ;
  
 output_parameters
- : 'inputs' ':' NEWLINE
-     INDENT
+ : 'outputs' ':' NEWLINE
+    ( INDENT
        output_parameter+
-     DEDENT
+     DEDENT )?
  ;
  
 output_parameter
- : 'name' ':' id NEWLINE 
+ : id ':' NEWLINE 
      { let u = new UnorderedClauses(this);
-       u.mandatory = ['type']; u.label = $id.text }
+       u.label = $id.text }
  	 INDENT
- 	   (output_parameter_clause {u.add($output_parameter_clause.ctx) } )+
+ 	   (io_parameter_clause {u.add($io_parameter_clause.ctx) } )+
  	 DEDENT
  	 { u.check(); }
  ;
 
-output_parameter_clause
- : 'type' ':' id  NEWLINE               
+io_parameter_clause
+ : 'type' ':' idtype  NEWLINE               
  | descr        
  | constraints 					        
  | 'required' ':' bool  NEWLINE         
@@ -826,7 +862,8 @@ output_parameter_clause
  | 'status' ':' ID NEWLINE
        { ['supported', 'unsupported', 'experimental', 'deprecated'].includes($ID.text) }?
  | entry_decl
- | 'value' ':' ( value | value_expr )
+ | 'value' ':' value_expr NEWLINE
+ | 'value' ':' value NEWLINE?
  ;
  
 constraints
@@ -853,13 +890,13 @@ constraint_clause
 
 entry_decl
  : entry_detailed
- | 'entry_schema' ':' id NEWLINE
+ | 'entry_schema' ':' idtype NEWLINE
  ;
 
 entry_detailed
  : 'entry_schema' ':' NEWLINE
      ( { let u = new UnorderedClauses(this);
-       u.mandatory = ['type'] }
+       u.setMandatory( ['type']) }
 	 INDENT
 	   (entry_clause {u.add($entry_clause.ctx) } )+
 	 DEDENT
@@ -867,7 +904,7 @@ entry_detailed
  ;
 
 entry_clause
- : 'type' ':' id NEWLINE
+ : 'type' ':' idtype NEWLINE
  | descr
  | entry_decl              
  | constraints
@@ -889,7 +926,7 @@ entity_metadata_clause
  ;
  
 entity_clause
- : 'derived_from' ':' id NEWLINE
+ : 'derived_from' ':' idtype NEWLINE
  | 'version' ':' version NEWLINE
  | entity_metadata
  | descr
@@ -1044,7 +1081,7 @@ capability_def
  | id ':' NEWLINE
      INDENT
      { let u = new UnorderedClauses(this); 
-       u.mandatory = [ 'type' ]; u.label = $id.text }
+       u.setMandatory( [ 'type' ]); u.label = $id.text }
        ( capability_def_clause 
          {u.add($capability_def_clause.ctx)})+
      DEDENT
@@ -1052,7 +1089,7 @@ capability_def
  ;
 
 capability_def_clause
- : 'type' ':' id NEWLINE
+ : 'type' ':' idtype NEWLINE
  | descr
  | properties
  | attributes
@@ -1077,7 +1114,7 @@ requirement_def
  | '-' INDENT id ':' NEWLINE
          INDENT
          { let u = new UnorderedClauses(this); 
-           u.mandatory = [ 'capability' ]; u.label = $id.text }
+           u.setMandatory( [ 'capability' ]); u.label = $id.text }
            ( requirement_def_clause {u.add($requirement_def_clause.ctx)})+
          DEDENT
          { u.check(); }
@@ -1092,7 +1129,7 @@ requirement_def_clause
  | 'relationship' ':' id NEWLINE
  | 'relationship' ':' NEWLINE
      INDENT
-     { let u = new UnorderedClauses(this); u.mandatory = [ 'type' ]; }
+     { let u = new UnorderedClauses(this); u.setMandatory( [ 'type' ]); }
        ( requirement_def_relation_clause 
          {u.add($requirement_def_relation_clause.ctx)})+
      DEDENT
@@ -1100,7 +1137,7 @@ requirement_def_clause
  ;
 
 requirement_def_relation_clause
- : 'type' ':'  id NEWLINE
+ : 'type' ':'  idtype NEWLINE
  | interface_defs
  ;
 
@@ -1137,14 +1174,14 @@ interface_def
  : id ':' NEWLINE 
      INDENT
      { let u = new UnorderedClauses(this); 
-        u.label = $id.text; u.mandatory = [ 'type' ]; }
+        u.label = $id.text; u.setMandatory( [ 'type' ]); }
        ( interface_def_clause {u.add($interface_def_clause.ctx)})+
      DEDENT
      { u.check(); }	 
  ;
 
 interface_def_clause
- : 'type' ':' id NEWLINE 
+ : 'type' ':' idtype NEWLINE 
  | inputs 
  | operation_def_intdef
  ;
@@ -1160,7 +1197,7 @@ interface_def_template
  : id ':' NEWLINE
      INDENT
      { let u = new UnorderedClauses(this); 
-       u.label = $id.text; u.mandatory = [ 'type' ]; }
+       u.label = $id.text; }
        (interface_def_template_clause 
         {u.add($interface_def_template_clause.ctx)})+
      DEDENT
@@ -1168,9 +1205,8 @@ interface_def_template
  ;
 
 interface_def_template_clause
- : 'type' ':' id NEWLINE
- | input_assignments
- | operation_def
+ : input_assignments
+ | operation_def_template
  ;
  
 operation_def
@@ -1199,6 +1235,19 @@ operation_def_intdef
      { u.check(); }	      
  ;
 
+operation_def_template
+ : id ':'
+     { ! (['type', 'inputs' ].includes($id.text)) }?
+     (URI | filepath) NEWLINE
+ | id ':' NEWLINE
+     { ! (['type', 'inputs' ].includes($id.text)) }?
+     INDENT
+     { let u = new UnorderedClauses(this); u.label = $id.text;}
+       (operation_def_clause_template {u.add($operation_def_clause_template.ctx)})+
+     DEDENT
+     { u.check(); }	      
+ ;
+
  
 operation_def_clause
  : descr
@@ -1206,7 +1255,19 @@ operation_def_clause
  | 'implementation' ':' ( URI | filepath) NEWLINE
  | 'implementation' ':' NEWLINE
      INDENT
-     { let u = new UnorderedClauses(this); u.mandatory = [ 'primary' ]; }
+     { let u = new UnorderedClauses(this); u.setMandatory( [ 'primary' ]); }
+       (implementation_clause {u.add($implementation_clause.ctx)})+
+     DEDENT
+     { u.check(); }	 
+ ;
+
+operation_def_clause_template
+ : descr
+ | input_assignments
+ | 'implementation' ':' ( URI | filepath) NEWLINE
+ | 'implementation' ':' NEWLINE
+     INDENT
+     { let u = new UnorderedClauses(this); u.setMandatory( [ 'primary' ]); }
        (implementation_clause {u.add($implementation_clause.ctx)})+
      DEDENT
      { u.check(); }	 
@@ -1216,7 +1277,7 @@ implementation_clause
  : 'primary' ':' ( URI | filepath) NEWLINE
  | 'primary' ':' NEWLINE
     { let u = new UnorderedClauses(this);
-      u.mandatory = ['type', 'file']; }
+      u.setMandatory( ['type', 'file']); }
  	INDENT
  	  (artifact_def_clause {u.add($artifact_def_clause.ctx) })+
 	DEDENT
@@ -1229,7 +1290,7 @@ implementation_clause
 
 operation_artifact_def
  : { let u = new UnorderedClauses(this);
-      u.mandatory = ['type', 'file']; }
+      u.setMandatory( ['type', 'file']); }
  	  (artifact_def_clause {u.add($artifact_def_clause.ctx) })+
    { u.check(); }
  ; 
@@ -1274,14 +1335,14 @@ group_def
  : id ':' NEWLINE
      INDENT
      { let u = new UnorderedClauses(this); 
-       u.label = $id.text; u.mandatory = [ 'type' ] }
+       u.label = $id.text; u.setMandatory( [ 'type' ]) }
 	    ( group_def_clause {u.add($group_def_clause.ctx)})+
 	 DEDENT
 	 { u.check(); }	 
  ;
  
 group_def_clause
- : 'type' ':' id NEWLINE
+ : 'type' ':' idtype NEWLINE
  | descr
  | entity_metadata
  | properties
@@ -1334,7 +1395,7 @@ policy_def
  : '-' INDENT id ':' NEWLINE
 	     INDENT
          { let u = new UnorderedClauses(this); 
-           u.label = $id.text; u.mandatory = [ 'type' ] }
+           u.label = $id.text; u.setMandatory( [ 'type' ]) }
 	        ( policy_def_clause {u.add($policy_def_clause.ctx)})+
 	     DEDENT
 	     { u.check(); }
@@ -1342,7 +1403,7 @@ policy_def
  ;
  
 policy_def_clause
- : 'type' ':' id NEWLINE
+ : 'type' ':' idtype NEWLINE
  | descr
  | entity_metadata
  | property_assignments
@@ -1375,7 +1436,7 @@ trigger_def_clause
  | 'event' ':' id NEWLINE
  | 'event' ':' NEWLINE
      INDENT
-     	'type' ':' id NEWLINE
+     	'type' ':' idtype NEWLINE
      DEDENT
  | 'schedule' ':' value // time interval ??
  | 'target_filter' ':' NEWLINE
@@ -1423,14 +1484,24 @@ properties_filter
  : 'properties' ':' NEWLINE
      ( INDENT
 	   ( property_filter )+
-	 DEDENT )?
+	   DEDENT )?
  ;
 
 property_filter
- : '-' INDENT id ':' constraint_clause NEWLINE DEDENT
- | '-' INDENT id ':' constraints DEDENT
+ : '-' INDENT id ':' '{' constraint_clause '}' NEWLINE DEDENT
+ | '-' INDENT id ':' NEWLINE
+         INDENT
+           ( property_filter_clause )+
+         DEDENT
+       DEDENT
+ | '-' INDENT value NEWLINE? DEDENT
  ;
 
+property_filter_clause
+ : '-' INDENT '{' constraint_clause '}' NEWLINE DEDENT
+ | '-' INDENT value NEWLINE? DEDENT
+ ;
+ 
 capabilities_filter
  : 'capabilities' ':' NEWLINE
 	  ( INDENT
@@ -1443,6 +1514,7 @@ capability_filter
 	     INDENT
 	       properties_filter
 	     DEDENT
+	   DEDENT
  ; 
  
 declarative_node_workflows
@@ -1471,7 +1543,7 @@ declarative_node_workflow_clause
  ;
 
 declarative_rel_workflows
- : ('workflow'|'workflows') ':' NEWLINE
+ : 'workflows' ':' NEWLINE
 	( INDENT
 		declarative_rel_workflow+
 	DEDENT)?
@@ -1608,11 +1680,12 @@ workflow_condition_assert_clause
  ;
 
 workflow_assertion
- : id ':' '[' '{' constraint_clause '}' (',' '{' constraint_clause '}')* ']' NEWLINE
- | id ':' NEWLINE
+ : '-' INDENT id ':' '[' '{' constraint_clause '}' (',' '{' constraint_clause '}')* ']' NEWLINE DEDENT
+ | '-' INDENT id ':' NEWLINE
 		INDENT
-		  ('-' constraint_clause)+
+		  ('-' INDENT '{' constraint_clause '}' NEWLINE DEDENT)+
 		DEDENT
+    DEDENT
  ;
 
 workflow_steps
@@ -1635,11 +1708,13 @@ workflow_step_clause
  | workflow_filter_clauses
  | workflow_activities
  | 'operation_host' ':' id  NEWLINE
+ | 'on_success' ':' id  NEWLINE 
  | 'on_success' ':' '[' id (',' id)* ']' NEWLINE 
  | 'on_success' ':' NEWLINE
      (INDENT
 	   ('-' INDENT id NEWLINE DEDENT )+
      DEDENT)?
+ | 'on_failure' ':' id NEWLINE
  | 'on_failure' ':' '[' id (',' id)* ']' NEWLINE
  | 'on_failure' ':' NEWLINE
      (INDENT
@@ -1686,14 +1761,14 @@ imperative_workflow_clause
 
 workflow_state
  : id
-       { [ 'initial', 'creating', 'created', 'configuring', 'configured',
-             'starting', 'started', 'stopping', 'stopped', 'deleting', 'deleted',
-             'error' ].includes($id.text) }? 
+//       { [ 'initial', 'creating', 'created', 'configuring', 'configured',
+//             'starting', 'started', 'stopping', 'stopped', 'deleting', 'deleted',
+//             'error' ].includes($id.text) }? 
              // 'stopped' et 'available' plus presents en 1.2
  ;
 
 value_expr
- : '{' func_expr '}'
+ : '{' func_expr '}' 
  ;
 
 func_expr
@@ -1786,7 +1861,7 @@ comparable_value
  
  
 list
- : '[' NEWLINE? (value ',' NEWLINE?)+ value NEWLINE? ']'
+ : '[' NEWLINE? value (',' NEWLINE? value)* NEWLINE? ']'
  | '[' NEWLINE? ']'
  | ('-' INDENT value NEWLINE? DEDENT)+
  | NEWLINE INDENT
@@ -1825,7 +1900,7 @@ range
 
 short_str
  : STRING_LITERAL
- | alltokens*
+ | alltokens+
  ;
  
 str
@@ -1905,7 +1980,23 @@ freq
 
 id
  : ID
- | allkeywords
+ | 'token'
+ | 'type'
+ | 'version'
+ | 'type'
+ | 'target'
+ | 'url'
+ ;
+ 
+idtype
+ : ID
+ | basetype_names
+ ;
+ 
+idval
+ : ID
+ | not_key_tokens
+ | key_tokens
  | basetype_names
  ;
  
@@ -1917,43 +2008,38 @@ alltokens
  ;
 
 allkeywords
+ : key_tokens
+ | not_key_tokens
+ ;
+
+key_tokens
  : ACTION
- | ACTIVITY
+ | ACTIVITY           
  | ACTIVITIES
- | AFTER
  | AFTER_SOURCE
  | AFTER_TARGET
  | AND
  | ARTIFACT_TYPES
  | ARTIFACTS
- | ASSERT
  | ATTRIBUTES
- | BEFORE
  | CALL_OPERATION
- | CAPABILITIES
  | CAPABILITY
+ | CAPABILITIES
  | CAPABILITY_TYPES
  | CONCAT
- | COPY
- | CREDENTIAL
- | CONDITION
  | CONSTRAINT                
  | CONSTRAINTS
+ | COPY
  | DATA_TYPES
  | DEFAULT
  | DELEGATE
  | DEPENDENCIES
- | DEPLOY_PATH
- | DERIVED_FROM
  | DESCRIPTION
+ | DERIVED_FROM
  | DIRECTIVES
  | ENTRY_SCHEMA
  | EQUAL
  | EVALUATIONS
- | EVENT
- | FILE
- | FILE_EXT
- | FILTER
  | GET_ARTIFACT
  | GET_ATTRIBUTE
  | GET_INPUT
@@ -1967,22 +2053,16 @@ allkeywords
  | IMPLEMENTATION
  | IMPORTS
  | IN_RANGE
- | INLINE
- | INPUTS
  | INTERFACE_TYPES
  | INTERFACES
+ | INPUTS
  | JOIN
  | LENGTH
  | LESS_OR_EQUAL
  | LESS_THAN
- | MAPPING
- | MAX_LENGTH
- | MEMBERS
  | METADATA
- | METHOD
- | MIME_TYPE
+ | MAX_LENGTH
  | MIN_LENGTH
- | NAME
  | NAMESPACE
  | NAMESPACE_PREFIX
  | NAMESPACE_URI
@@ -1996,28 +2076,20 @@ allkeywords
  | OPERATION_HOST
  | OR
  | PATTERN
- | PERIOD
  | POLICY_TYPES
  | POLICIES
  | PRIMARY
- | PRECONDITIONS
  | PROPERTIES
- | PROTOCOL
- | RELATIONSHIP
  | RELATIONSHIP_TEMPLATES
  | RELATIONSHIP_TYPES
- | REQUIREMENTS
- | REPOSITORIES
+ | RELATIONSHIP
  | REPOSITORY
  | REQUIRED
- | SCHEMA
- | SCHEDULE
+ | REQUIREMENTS
+ | REPOSITORIES
  | SET_STATE
  | SOURCE_WEAVING
- | STATUS
- | STEPS
  | SUBSTITUTION_MAPPING
- | TARGET
  | TARGET_FILTER
  | TARGET_RELATIONSHIP
  | TARGET_WEAVING
@@ -2025,24 +2097,49 @@ allkeywords
  | TEMPLATE_AUTHOR
  | TEMPLATE_NAME
  | TEMPLATE_VERSION
- | TOKEN
- | TOKEN_TYPE
  | TOPOLOGY_TYPES
  | TOSCA_DEFINITIONS_VERSION
  | TRIGGERS
- | TYPE
- | URL
- | USER
+ | VALID_VALUES
  | VALID_SOURCE_TYPES
  | VALID_TARGET_TYPES
- | VALID_VALUES
- | VALUE
- | LVERSION
  | WAIT_SOURCE
  | WAIT_TARGET
  | WORKFLOWS
  ;
-
+ 
+not_key_tokens
+ : AFTER
+ | ASSERT
+ | CONDITION
+ | BEFORE
+// | CREDENTIAL
+ | DEPLOY_PATH
+ | EVENT
+ | FILE
+ | FILE_EXT
+ | FILTER
+ | INLINE
+ | MAPPING
+ | MEMBERS
+ | METHOD
+ | MIME_TYPE
+ | PERIOD
+ | PRECONDITIONS
+// | PROTOCOL
+ | SCHEDULE
+ | SCHEMA
+ | STATUS
+ | STEPS
+ | TARGET
+ | TOKEN
+// | TOKEN_TYPE
+ | TYPE
+ | URL
+// | USER
+ | VALUE 
+ ; 
+ 
 values_tokens
  : SCALAR_SIZE
  | SCALAR_TIME
@@ -2063,7 +2160,9 @@ values_tokens
  | HEX_INTEGER
  | BIN_INTEGER
  | NAN
+ | URI
  | TIMESTAMP
+ | VERSION
  ;
 
 symbol_names
@@ -2102,11 +2201,12 @@ basetype_names
  | INTEGER
  | FLOAT
  | SCALAR_UNIT_SIZE
- | LSIZE
+// | LSIZE
  | SCALAR_UNIT_TIME
- | LTIME
+// | LTIME
  | SCALAR_UNIT_FREQUENCY
- | LFREQUENCY
+// | LFREQUENCY
+ | LVERSION
  | UNBOUNDED
  | NULL
  ;
@@ -2126,11 +2226,11 @@ RANGE: 'range';
 INTEGER: 'integer';
 FLOAT: 'float';
 SCALAR_UNIT_SIZE: 'scalar-unit.size';
-LSIZE: 'size';
+//LSIZE: 'size';
 SCALAR_UNIT_TIME: 'scalar-unit.time';
-LTIME: 'time';
+//LTIME: 'time';
 SCALAR_UNIT_FREQUENCY: 'scalar-unit.frequency';
-LFREQUENCY: 'frequency';
+//LFREQUENCY: 'frequency';
 
 /* keywords */
 ACTION: 'action';
@@ -2151,7 +2251,7 @@ CAPABILITY: 'capability';
 CAPABILITY_TYPES: 'capability_types';
 CONCAT: 'concat';
 COPY: 'copy';
-CREDENTIAL: 'credential';
+//CREDENTIAL: 'credential';
 CONDITION: 'condition';
 CONSTRAINT: 'constraint';
 CONSTRAINTS: 'constraints';
@@ -2198,7 +2298,6 @@ METADATA: 'metadata';
 METHOD: 'method';
 MIME_TYPE: 'mime_type';
 MIN_LENGTH: 'min_length';
-NAME: 'name';
 NAMESPACE: 'namespace';
 NAMESPACE_PREFIX: 'namespace_prefix';
 NAMESPACE_URI: 'namespace_uri';
@@ -2218,7 +2317,7 @@ POLICIES: 'policies';
 PRIMARY: 'primary';
 PRECONDITIONS: 'precondditions';
 PROPERTIES: 'properties';
-PROTOCOL: 'protocol';
+// PROTOCOL: 'protocol';
 RELATIONSHIP: 'relationship';
 RELATIONSHIP_TEMPLATES: 'relationship_templates';
 RELATIONSHIP_TYPES: 'relationship_types';
@@ -2242,13 +2341,13 @@ TEMPLATE_AUTHOR: 'template_author';
 TEMPLATE_NAME: 'template_name';
 TEMPLATE_VERSION: 'template_version';
 TOKEN: 'token';
-TOKEN_TYPE: 'token_type';
+// TOKEN_TYPE: 'token_type';
 TOPOLOGY_TYPES: 'topology_template';
 TOSCA_DEFINITIONS_VERSION: 'tosca_definitions_version';
 TRIGGERS: 'triggers';
 TYPE: 'type';
 URL: 'url';
-USER: 'user';
+// USER: 'user';
 VALID_SOURCE_TYPES: 'valid_source_types';
 VALID_TARGET_TYPES: 'valid_target_types';
 VALID_VALUES: 'valid_values';
@@ -2869,6 +2968,7 @@ fragment ID_START
 fragment ID_CONTINUE
  : ID_START
  | DOT
+ | MINUS
  | [0-9]
  | [\u0300-\u036F]
  | [\u0483-\u0486]

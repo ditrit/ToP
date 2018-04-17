@@ -57,7 +57,7 @@ tosca_definitions_version: tosca_simple_yaml_1_2
 relationship_types:
 
   tosca.relationships.ConnectsTo:
-    workflow:
+    workflows: # error in doc with keyword 'workflow' 
       install: # name of the workflow for wich the weaving has to be taken in account
         source_weaving: # Instruct how to weave some tasks on the source workflow (executed on SOURCE instance)
           - after: configuring # instruct that this operation should be weaved after the target reach configuring state

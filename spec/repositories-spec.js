@@ -91,7 +91,7 @@ repositories:
 tosca_definitions_version: tosca_simple_yaml_1_2
 
 repositories:
-  my_code_repo:
+  my_code_repo2:
     description: My project’s code repository in GitHub
     url: https://github.com/my-project/
     credential: {  

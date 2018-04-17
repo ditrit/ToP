@@ -238,23 +238,39 @@ describe("Tosca Compiler syntax -> ", function() {
 
     });
 
-    describe("strings : ", function() {
+    describe("short_str : ", function() {
 
   	it("The parser should accept simple quoted strings",
-		function() { expect( app.parse(`'je suis: très "content !"'`, 'str')).toEqual([]) });
+		function() { expect( app.parse(`
+'je suis: très "content !"'
+`, 'test_short_str')).toEqual([]) });
     
   	it("The parser should accept double quoted strings",
-		function() { expect( app.parse(`"je suis très: 'content'"`, 'str')).toEqual([]) });
+		function() { expect( app.parse(`
+"je suis très: 'content'"
+`, 'test_short_str')).toEqual([]) });
     
   	it("The parser should accept no quoted strings",
-		function() { expect( app.parse(`je suis très 'content'`, 'str')).toEqual([]) });
+		function() { expect( app.parse(`
+je suis très 'content'
+`, 'test_short_str')).toEqual([]) });
     
-  	it("The parser should accept multiline strings",
+  	it("The parser should accept @ip",
+		function() { expect( app.parse(`
+9.9.89.89
+`, 'test_short_str')).toEqual([]) });
+    
+		
+	});
+	
+    describe("multiline strings : ", function() {
+    
+  	it("The parser should accept simple multiline strings",
 		function() { expect( app.parse(
 `| je suis très 
   'content'
   en fait
-`, 'str')).toEqual([]) });
+`, 'test_mlstr')).toEqual([]) });
 
   	it("The parser should accept multiline strings with sub indentation",
 		function() { expect( app.parse(
@@ -263,7 +279,7 @@ describe("Tosca Compiler syntax -> ", function() {
      de tout
        cela
   en fait
-`, 'str')).toEqual([]) });
+`, 'test_mlstr')).toEqual([]) });
 
   	it("The parser should accept multiline strings with specifier",
 		function() { expect( app.parse(
@@ -273,7 +289,7 @@ describe("Tosca Compiler syntax -> ", function() {
        cela
    en fait
  
-`, 'str')).toEqual([]) });
+`, 'test_mlstr')).toEqual([]) });
 	
 	});
 
