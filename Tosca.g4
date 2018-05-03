@@ -212,6 +212,13 @@ tosca_input
  : ( NEWLINE | service_template )* EOF
  ;
 
+test_size : ( NEWLINE | size )* EOF ;
+test_time : ( NEWLINE | time )* EOF ;
+test_freq : ( NEWLINE | freq )* EOF ;
+test_versions : ( NEWLINE | version )* EOF ;
+test_integers : ( NEWLINE | integer )* EOF ;
+test_reals : ( NEWLINE | real )* EOF ;
+test_timestamp : ( NEWLINE | timestamp )* EOF ;
 test_attributes : ( NEWLINE | attributes )* EOF ;
 test_properties : ( NEWLINE | properties )* EOF ;
 test_inputs : ( NEWLINE | inputs )* EOF ;
@@ -1861,21 +1868,21 @@ comparable_value
  
  
 list
- : '[' NEWLINE? value (',' NEWLINE? value)* NEWLINE? ']'
- | '[' NEWLINE? ']'
- | ('-' INDENT value NEWLINE? DEDENT)+
- | NEWLINE INDENT
+ : '[' NEWLINE? value (',' NEWLINE? value)* NEWLINE? ']'                # jsonList
+ | '[' NEWLINE? ']'                                                     # emptyList
+ | ('-' INDENT value NEWLINE? DEDENT)+                                  # itemList
+ | NEWLINE INDENT                                                       
       ('-' INDENT value NEWLINE? DEDENT)+
-   DEDENT
+   DEDENT                                                               # indentList
  ;
 
 map
- : '{' NEWLINE? (value_assoc ',' NEWLINE?)+ value_assoc NEWLINE? '}'  
- | '{' NEWLINE? '}' 
- | ( value_assoc NEWLINE? )+
- | NEWLINE INDENT
+ : '{' NEWLINE? (value_assoc ',' NEWLINE?)+ value_assoc NEWLINE? '}'    # jsonMap
+ | '{' NEWLINE? '}'                                                     # emptyMap
+ | ( value_assoc NEWLINE? )+                                            # itemMap
+ | NEWLINE INDENT                                                       
      ( value_assoc NEWLINE? )+
-   DEDENT
+   DEDENT                                                               # indentMap
  ;
 
 value_assoc
@@ -1890,12 +1897,15 @@ range
  : '[' size ',' size ']'
  | '[' time ',' time ']'
  | '[' freq ',' freq ']'
- | '[' ( number | infinity) ',' ( number | infinity) ']'
+ | '[' number ',' number ']'
+ | '[' number ',' infinity ']'
+ | '[' infinity ',' infinity ']'
+ | '[' infinity ',' number ']'
  | '[' timestamp ',' timestamp ']'
  | '[' version ',' version ']'
- | '[' UNBOUNDED ',' UNBOUNDED ']'
- | '[' comparable_value ',' UNBOUNDED ']'
- | '[' UNBOUNDED ',' comparable_value ']'
+ | '[' unbounded ',' unbounded ']'
+ | '[' comparable_value ',' unbounded ']'
+ | '[' unbounded ',' comparable_value ']'
  ;
 
 short_str
@@ -1912,8 +1922,8 @@ str
  ;
 
 sub_mlstring
- : alltokens* NEWLINE
- | INDENT sub_mlstring+ DEDENT
+ : alltokens* NEWLINE           #sub_mlstring_fin
+ | INDENT sub_mlstring+ DEDENT  #sub_mlstring_rec
  ;
  
 number
@@ -1929,7 +1939,7 @@ version
 real
  : INT_DOT_INT
  | FLOAT_NUMBER
- | '0'
+ | ZERO
  | INFINITY
  | NAN
  | integer
@@ -1952,6 +1962,11 @@ infinity
  : INFINITY
  ;
 
+unbounded
+ : UNBOUNDED
+ ;
+
+
 timestamp
  : TIMESTAMP
  ;
@@ -1961,7 +1976,7 @@ integer
  | OCT_INTEGER
  | HEX_INTEGER
  | BIN_INTEGER
- | '0'
+ | ZERO
  | INFINITY
  | NAN
  ;
@@ -2001,9 +2016,9 @@ idval
  ;
  
 alltokens
- : allkeywords 
+ : values_tokens
+ | allkeywords 
  | basetype_names
- | values_tokens
  | symbol_names
  ;
 
@@ -2141,7 +2156,8 @@ not_key_tokens
  ; 
  
 values_tokens
- : SCALAR_SIZE
+ : ID
+ | SCALAR_SIZE
  | SCALAR_TIME
  | SCALAR_FREQ
  | K_SELF
@@ -2151,7 +2167,6 @@ values_tokens
  | LOCAL_FILE
  | TRUE
  | FALSE
- | ID
  | STRING_LITERAL
  | FLOAT_NUMBER
  | INT_DOT_INT
@@ -2159,6 +2174,7 @@ values_tokens
  | OCT_INTEGER
  | HEX_INTEGER
  | BIN_INTEGER
+ | ZERO
  | NAN
  | URI
  | TIMESTAMP
@@ -2428,19 +2444,19 @@ LITEM
  ;
 
 SCALAR_SIZE 
- : (INT_DOT_INT | FLOAT_NUMBER | '0' | DECIMAL_INTEGER) 
+ : (INT_DOT_INT | FLOAT_NUMBER | ZERO | DECIMAL_INTEGER) 
    SPACES* 
    ([Bb]|[kK][Bb]|[Kk][iI][Bb]|[Mm][Bb]|[Mm][iI][Bb]|[Gg][Bb]|[Gg][iI][Bb]|[Tt][Bb]|[Tt][iI][Bb])
  ;
 
 SCALAR_TIME 
- : (INT_DOT_INT | FLOAT_NUMBER | '0' | DECIMAL_INTEGER) 
+ : (INT_DOT_INT | FLOAT_NUMBER | ZERO | DECIMAL_INTEGER) 
    SPACES* 
-   ([dD]|[hH]|[mM]|[s]|[mM][sS]|[uU][sS]|[nN][sS])
+   ([dD]|[hH]|[mM]|[sS]|[mM][sS]|[uU][sS]|[nN][sS])
  ;
 
 SCALAR_FREQ
- : (INT_DOT_INT | FLOAT_NUMBER | '0' | DECIMAL_INTEGER) 
+ : (INT_DOT_INT | FLOAT_NUMBER | ZERO | DECIMAL_INTEGER) 
    SPACES* 
    ([Hh][zZ]|[kK][Hh][zZ]|[Mm][Hh][zZ]|[Gg][Hh][zZ])
  ;  
@@ -2460,7 +2476,7 @@ INFINITY
  ;
 
 VERSION
- : INT_DOT_INT '.' DECIMAL_INTEGER ('.' ID ('-'DECIMAL_INTEGER)?)?
+ : INT_DOT_INT '.' DIGIT+ ('.' ID ('-'DIGIT+)?)?
  ;
 
 FLOAT_NUMBER
@@ -2476,22 +2492,22 @@ INT_DOT_INT
 
 DECIMAL_INTEGER
  : [+-]? NON_ZERO_DIGIT DIGIT*
- | '0'+
+ | ZERO+
  ;
 
 /// octinteger     ::=  "0" ("o" | "O") octdigit+
 OCT_INTEGER
- : [+-]? '0' [oO] OCT_DIGIT+
+ : [+-]? ZERO [oO] OCT_DIGIT+
  ;
 
 /// hexinteger     ::=  "0" ("x" | "X") hexdigit+
 HEX_INTEGER
- : [+-]? '0' [xX] HEX_DIGIT+
+ : [+-]? ZERO [xX] HEX_DIGIT+
  ;
 
 /// bininteger     ::=  "0" ("b" | "B") bindigit+
 BIN_INTEGER
- : [+-]? '0' [bB] BIN_DIGIT+
+ : [+-]? ZERO [bB] BIN_DIGIT+
  ;
 
 MLPREF: [|>][+-]?;
@@ -2543,6 +2559,9 @@ URI
  : SCHEME '://' ( URI_STR ':' URI_STR '@')? (URI_STR | IP) (':' DIGIT (DIGIT (DIGIT DIGIT?)?)?)? ('/' (URI_STR ('/' URI_STR)*'/'?)?)?
  ; 
 
+ZERO
+ : '0'
+ ;
 
 ID
  : ID_START ID_CONTINUE*
