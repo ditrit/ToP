@@ -22,10 +22,10 @@ You need to install :
 <pre>jasmine</pre>
 
 ## Tests
-Tests are implemented with *jasmine* and are located in the *spec* directory.
-Normative types (1.0 and 1.2) come from the dedicated [normative_types](https://github.com/ditrit/normative_types) ditrit project.
+Tests are implemented with *jasmine* and are located in the *tests* directory. 
+Normative types (1.0 and 1.2) definitions come from the dedicated [normative_types](https://github.com/ditrit/normative_types) ditrit project.
 
-The tests (a little over 400) cover the entire grammar as defined in the standard and all the examples provided in the latter.
+The tests for syntax verification (a little over 400) cover the entire grammar as defined in the standard and all the examples provided in the latter.
 
 ## Caution
 ToPar is currently only a syntax validator and has not been tested in production. 
