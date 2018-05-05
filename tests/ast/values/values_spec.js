@@ -592,25 +592,25 @@ je suis très 'content'
 		function() { expect( app.parse_ast(`[ 1.0.0, 3 ]`, 'range') instanceof ToscaErrors).toBe(true) });
 
     });
-/*
+
     describe("list ", function() {
 
     it("The parser should accept empty list ",
-		function() { expect( app.parse_ast(`[]`, 'test_lists') instanceof ToscaErrors).toBe(false) });
+		function() { expect( app.parse_ast(`[]`, 'test_lists').value.length).toBe(0) });
 
     it("The parser should accept multiline empty list ",
 		function() { expect( app.parse_ast(`[  
 
-]`, 'test_lists') instanceof ToscaErrors).toBe(false) });
-	
+]`, 'test_lists').value.length).toBe(0) });
+
     it("The parser should accept list of integers in short notation ",
-		function() { expect( app.parse_ast(`[1, 2, 3, -6]`, 'test_lists') instanceof ToscaErrors).toBe(false) });
+		function() { expect( app.parse_ast(`[1, 2, 3, -6]`, 'test_lists').value[3].value).toBe(-6) });
 
     it("The parser should accept multiline list of integers in short notation ",
 		function() { expect( app.parse_ast(`[
 1, 2, 
 3, 
--6]`, 'test_lists') instanceof ToscaErrors).toBe(false) });
+-6]`, 'test_lists').value[2].value).toBe(3) });
 
     it("The parser should accept list of integer in expended notation ",
 		function() { expect( app.parse_ast(
@@ -618,25 +618,25 @@ je suis très 'content'
 - 2
 - 3
 - -6
-`, 'test_lists') instanceof ToscaErrors).toBe(false) });
+`, 'test_lists').value[3].value).toBe(-6) });
 
     it("The parser should accept expended list with one item ",
 		function() { expect( app.parse_ast(
-`- tagada`, 'test_lists') instanceof ToscaErrors).toBe(false) });
+`- tagada`, 'test_lists').value[0].value).toEqual("tagada") });
 
     it("The parser should accept expended list of short list ",
 		function() { expect( app.parse_ast(
 `- [ 1, 2]
 - [4,5]
-`, 'test_lists') instanceof ToscaErrors).toBe(false) });
+`, 'test_lists').value[1].value[0].value).toBe(4) });
 
     it("The parser should accept expended list of expended lists ",
 		function() { expect( app.parse_ast(
 `- - 1
 - - '4' 
-  - '5'
-`, 'test_lists') instanceof ToscaErrors).toBe(false) });
-	
+  - a
+`, 'test_lists').value[1].value[1].value).toEqual("a") });
+
     it("The parser should accept expended list of maps ",
 		function() { expect( app.parse_ast(
 `- alain: re
@@ -646,7 +646,7 @@ je suis très 'content'
 - test: 7
   esszi: 9
 - des: gtr
-`, 'test_lists') instanceof ToscaErrors).toBe(false) });
+`, 'test_lists').value[3].value.des.value).toEqual("gtr") });
 
     it("The parser should accept heterogeous lists ",
 		function() { expect( app.parse_ast(
@@ -657,28 +657,28 @@ je suis très 'content'
 - test: 7
   esszi: 9
 - -23.5e4 Hz
-`, 'test_lists') instanceof ToscaErrors).toBe(false) });
+`, 'test_lists').value[3].num).toEqual(-235000) });
 
     });
 
     describe("map", function() {
 
     it("The parser should accept empty map ",
-		function() { expect( app.parse_ast(`{}`, 'map') instanceof ToscaErrors).toBe(false) });
+		function() { expect( app.parse_ast(`{}`, 'map').value).toEqual({}) });
 
     it("The parser should accept multiline empty map ",
 		function() { expect( app.parse_ast(`{  
 
-}`, 'test_maps') instanceof ToscaErrors).toBe(false) });
-	
+}`, 'test_maps').value).toEqual({}) });
+
     it("The parser should accept map in short notation ",
-		function() { expect( app.parse_ast(`{a: 1, bb: 2, v: 3, z: -6}`, 'map') instanceof ToscaErrors).toBe(false) });
+		function() { expect( app.parse_ast(`{a: 1, bb: 2, v: 3, z: -6}`, 'map').value.z.value).toBe(-6) });
 
     it("The parser should accept multiline map in short notation ",
 		function() { expect( app.parse_ast(`{ 
 a:1, bb: 2, 
 v: 3, 
-z: -6}`, 'test_maps') instanceof ToscaErrors).toBe(false) });
+z: -6}`, 'test_maps').value.v.value).toBe(3) });
 
     it("The parser should accept map in expended notation ",
 		function() { expect( app.parse_ast(
@@ -686,17 +686,18 @@ z: -6}`, 'test_maps') instanceof ToscaErrors).toBe(false) });
 b: 2
 c:3
 d: -6
-`, 'map') instanceof ToscaErrors).toBe(false) });
+`, 'map').value.c.value).toBe(3) });
+
 
     it("The parser should accept expended map with one item ",
 		function() { expect( app.parse_ast(
-`pouet: tagada`, 'map') instanceof ToscaErrors).toBe(false) });
+`pouet: tagada`, 'map').value.pouet.value).toEqual("tagada") });
 
     it("The parser should accept expended map with short map and list values",
 		function() { expect( app.parse_ast(
 `val1: [ 1, 2]
 val2: { a: 4, fr:5}
-`, 'test_maps') instanceof ToscaErrors).toBe(false) });
+`, 'test_maps').value.val2.value.fr.value).toBe(5) });
 
     it("The parser should accept expended map of maps ",
 		function() { expect( app.parse_ast(
@@ -711,7 +712,7 @@ trois:
   esszi: 9
 quatre:
   des: gtr
-`, 'test_maps') instanceof ToscaErrors).toBe(false) });
+`, 'test_maps').value.quatre.value.des.value).toEqual("gtr") });
 
     it("The parser should accept expended map of lists of map or lists etc.",
 		function() { expect( app.parse_ast(
@@ -734,10 +735,9 @@ deux:
    - ygh
    - - a
 
-`, 'test_maps') instanceof ToscaErrors).toBe(false) });
-	
+`, 'test_maps').value.un1.value[0].value[3].value.il.value[1].value[1].value).toBe(1234) });
+
 	});
-i*/	
   });
   
 });
