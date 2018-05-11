@@ -64,7 +64,6 @@ function parse(input, rule_name='tosca_input', step=phase.ast, filename=null) {
 
   if (step >= phase.ast) {
     var extractor = new ToscaAstBuilder(annotations, filename);
-    debugger;
     antlr4.tree.ParseTreeWalker.DEFAULT.walk(extractor, tree);
     ast = extractor.last;
   }

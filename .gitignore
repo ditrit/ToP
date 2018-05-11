@@ -5,6 +5,9 @@ archive/
 lib/
 node_modules/
 !Tosca.g4
-Tosca*
+ToscaLexer*
+ToscaParser*
+ToscaListener*
+Tosca.*
 package.json
 a.js
