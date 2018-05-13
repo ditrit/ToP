@@ -199,21 +199,25 @@ range
  ;
 
 short_str
- : STRING_LITERAL               # strLiteral
- | alltokens+                   # strAlltokens
+ : STRING_LITERAL WS?            # strLiteral
+ | (alltokens WS?)+                    # strAlltokens
  ;
  
 str
- : MLPREF alltokens* NEWLINE    
+ : MLPREF str_firstline    
        (INDENT 
            sub_mlstring+
-       DEDENT)?                 # strMulti
- | short_str                    # strSimple
+       DEDENT)?                  # strMulti
+ | short_str                     # strSimple
+ ;
+
+str_firstline
+ : WS? (alltokens WS? )* NEWLINE
  ;
 
 sub_mlstring
- : alltokens* NEWLINE           # strSubAllTokens
- | INDENT sub_mlstring+ DEDENT  # strSubMulti
+ : (alltokens WS?)* NEWLINE      # strSubAllTokens
+ | INDENT sub_mlstring+ DEDENT   # strSubMulti
  ;
  
 number
@@ -477,7 +481,7 @@ OPEN_BRACE : '{' {this.opened++;};
 CLOSE_BRACE : '}' {this.opened--;};
 
 IGNORE
- : ( SPACES | COMMENT | LINE_JOINING ) -> skip
+ : ( COMMENT | LINE_JOINING ) -> skip
  ; 
  
 UNBOUNDED
@@ -505,11 +509,17 @@ ZERO
 ID
  : ID_START ID_CONTINUE*
  ;
+
+WS
+ : SPACES
+ ;
+
                                                  
 UNKNOWN_CHAR
  : .
  ;
- 
+
+
 /*
  * fragments
  */

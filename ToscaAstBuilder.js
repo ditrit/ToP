@@ -262,6 +262,19 @@ ToscaAstBuilder.prototype.exitRange = function(ctx) {
 	}
 }
 
+// Exit a parse tree produced by ToscaParser#str
+ToscaAstBuilder.prototype.exitStr = function(ctx) {
+	var ast_ctx = this.astCtx(ctx);
+	debugger;
+	let input = ctx.getText(); 
+	if (input) {
+		this.setValue(new values.Str(ast_ctx, input));
+	} else {
+		ast_ctx.astError("ERROR : No String value found")
+	}
+}
+
+
 // Exit a parse tree produced by ToscaParser#str, 'simple' alternative.
 ToscaAstBuilder.prototype.exitStrSimple = function(ctx) {
 	var ast_ctx = this.astCtx(ctx);
@@ -281,14 +294,16 @@ ToscaAstBuilder.prototype.exitStrSimple = function(ctx) {
 // Exit a parse tree produced by ToscaParser#str, 'multiple' alternative
 ToscaAstBuilder.prototype.exitStrMulti = function(ctx) {
 	var ast_ctx = this.astCtx(ctx);
-	let txt_tokens = ctx.alltokens().map(x=> x.getText()).join(" ");
-	let txt_submls = ctx.sub_mlstring().map( x=> this.getValue(x).value ).join("\n");
-	let str = txt_tokens + "\n " + txt_submls
-	if (str) {
-		this.setValue(new values.Str(ast_ctx, str));
-	} else {
-		ast_ctx.astError("ERROR : No String value found")
+	debugger;
+	let line1 = ctx.str_firstline().getText();
+	let lines = ctx.sub_mlstring().map( x => this.getValue(x));
+	let indent = (ctx.INDENT) ? ctx.INDENT().getText() : 0;
+	let str = (line1) ? line1 : "";
+	if (lines) {
+		strLines  = new values.StrIndent(ast_ctx, lines, indent);
+		str += strLines.value; 
 	}
+	this.setValue(new values.Str(ast_ctx, str));
 }
 
 // Exit a parse tree produced by ToscaParser#short_str, 'literal' alternative
@@ -317,8 +332,9 @@ ToscaAstBuilder.prototype.exitStrAlltokens = function(ctx) {
 ToscaAstBuilder.prototype.exitStrSubAllTokens = function(ctx) {
 	var ast_ctx = this.astCtx(ctx);
 	let str  = ctx.getText();
+	console.log("exitStrSubAlltokens");
 	if (str) {
-		this.setValue(new values.Str(ast_ctx, str));
+		this.setValue(new values.StrIndent(ast_ctx, str));
 	} else {
 		ast_ctx.astError("ERROR : No String value found")
 	}
@@ -327,15 +343,15 @@ ToscaAstBuilder.prototype.exitStrSubAllTokens = function(ctx) {
 // Exit a parse tree produced by ToscaParser#str_mlstring, 'strSubMulti' alternative
 ToscaAstBuilder.prototype.exitStrSubMulti = function(ctx) {
 	var ast_ctx = this.astCtx(ctx);
-	debugger;
-	let str = ctx.sub_mlstring().map( x => this.getValue(x).value).join("\n");
-	if (str) {
-		this.setValue(new values.Str(ast_ctx, str));
+	console.log("exitStrSubMulti");
+	let lines = ctx.sub_mlstring().map( x => this.getValue(x));
+	let indent = (ctx.INDENT) ? ctx.INDENT().getText() : "";
+	if (lines) {
+		this.setValue(new values.StrIndent(ast_ctx, lines, indent));
 	} else {
 		ast_ctx.astError("ERROR : No String value found")
 	}
 }
-
 
 ToscaAstBuilder.prototype.exitJsonList = function(ctx) {
 	var ast_ctx = this.astCtx(ctx);
