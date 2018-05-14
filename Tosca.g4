@@ -204,15 +204,11 @@ short_str
  ;
  
 str
- : MLPREF str_firstline    
+ : MLPREF WS*  NEWLINE    
        (INDENT 
            sub_mlstring+
        DEDENT)?                  # strMulti
  | short_str                     # strSimple
- ;
-
-str_firstline
- : WS? (alltokens WS? )* NEWLINE
  ;
 
 sub_mlstring

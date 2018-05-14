@@ -564,41 +564,11 @@ Str.prototype.constructor = Str;
 
 exports.Str = Str;
 
-
-StrIndent = function(ast_ctx, input, indent="") {
-	AstEntity.call(this, ast_ctx, 'StrIndent');
-	if (typeof(input) == 'string') {
-		this.str      = input;
-		this.indent   = indent; 
-	} else if (input instanceof StrIndent) {
-		this.str    = input.str;
-		this.indent = (indent.length > input.indent.length) ? indent : input.indent;
-	} else if (input instanceof Str) {
-		this.str 	= input.value;
-		this.indent = indent;
-	} else if (input instanceof Array) {
-		for (ele of input) {
-			if (! (ele instanceof StrIndent) ) {
-				this.str = this.input = null;
-				ast_ctx.astError("Error : invalid part of String value")
-			};
-		};
-		this.str = input;
-		this.indent = (indent) ? indent : 0;		
-	} else {
-		this.str = this.input = null;
-		ast_ctx.astError("Error : invalid String value")
-	};
-	initValue(this);
-	console.log("StrIndent : \"" + this._str + "\"")
-	return this;
-}
-
 initValue = function(strindent) {
 	if (!strindent.str) {
 		return null 
 	} else if (typeof(strindent.str) == 'string') {
-		strindent._str = strindent.value = strindent.indent + strindent.str;
+		strindent._str = strindent.value = ' '.repeat(strindent.indent) + strindent.str;
 		return strindent.value;
 	} else if (strindent.str instanceof Array) {
 		for (ele of strindent.str) {
@@ -610,18 +580,55 @@ initValue = function(strindent) {
 	}
 }
 
-StrIndent.prototype.setIndent = function(indent) {
-	this.indent = indent;
-}
 
-StrIndent.prototype.setIndent = function(indent) {
-	this.indent = indent;
+StrIndent = function(ast_ctx, input, indent=0) {
+	AstEntity.call(this, ast_ctx, 'StrIndent');
+	if (typeof(input) == 'string') {
+		this.str      = input;
+		this.indent   = indent; 
+	} else if (input instanceof StrIndent) {
+		this.str    = input.str;
+		this.indent = (indent > input.indent) ? indent : input.indent;
+	} else if (input instanceof Str) {
+		this.str 	= input.value;
+		this.indent = indent;
+	} else if (input instanceof Array) {
+		for (ele of input) {
+			if (! (ele instanceof StrIndent) ) {
+				this.str = this.input = null;
+				ast_ctx.astError("Error : invalid part of String value")
+			};
+		};
+		this.str = input;
+		this.indent = indent;		
+	} else {
+		this.str = this.input = null; this.indent = 0;
+		ast_ctx.astError("Error : invalid String value")
+	};
+	initValue(this);
+	console.log("StrIndent : \"" + this._str + "\"")
+	return this;
 }
 
 StrIndent.prototype = Object.create(AstEntity.prototype);
 StrIndent.prototype.constructor = StrIndent;
 
+
+StrIndent.prototype.unindent = function(num) {
+	this.indent -= (this.indent > num) ? num : this.indent;
+    if (this.str instanceof Array) {
+		for (ele of this.str) {
+			ele.unindent(num);
+		}
+	}
+	initValue(this);
+}
+
+
 exports.StrIndent = StrIndent;
+
+
+
 
 
 

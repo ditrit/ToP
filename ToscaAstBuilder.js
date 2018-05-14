@@ -290,20 +290,19 @@ ToscaAstBuilder.prototype.exitStrSimple = function(ctx) {
 	}
 }
 
-
 // Exit a parse tree produced by ToscaParser#str, 'multiple' alternative
 ToscaAstBuilder.prototype.exitStrMulti = function(ctx) {
 	var ast_ctx = this.astCtx(ctx);
 	debugger;
-	let line1 = ctx.str_firstline().getText();
-	let lines = ctx.sub_mlstring().map( x => this.getValue(x));
-	let indent = (ctx.INDENT) ? ctx.INDENT().getText() : 0;
-	let str = (line1) ? line1 : "";
-	if (lines) {
-		strLines  = new values.StrIndent(ast_ctx, lines, indent);
-		str += strLines.value; 
+	if (ctx.sub_mlstring() instanceof Array) {
+		let lines = ctx.sub_mlstring().map( x => this.getValue(x));
+		let indent = (ctx.INDENT) ? ctx.INDENT().getText().length : 0;
+		strLines = new values.StrIndent(ast_ctx, lines, indent);
+		strLines.unindent(indent);
+		this.setValue(new values.Str(ast_ctx, strLines.value));
+	} else {
+			ast_ctx.astError("ERROR : No String value found")		
 	}
-	this.setValue(new values.Str(ast_ctx, str));
 }
 
 // Exit a parse tree produced by ToscaParser#short_str, 'literal' alternative
@@ -345,7 +344,7 @@ ToscaAstBuilder.prototype.exitStrSubMulti = function(ctx) {
 	var ast_ctx = this.astCtx(ctx);
 	console.log("exitStrSubMulti");
 	let lines = ctx.sub_mlstring().map( x => this.getValue(x));
-	let indent = (ctx.INDENT) ? ctx.INDENT().getText() : "";
+	let indent = (ctx.INDENT) ? ctx.INDENT().getText().length : 0;
 	if (lines) {
 		this.setValue(new values.StrIndent(ast_ctx, lines, indent));
 	} else {
