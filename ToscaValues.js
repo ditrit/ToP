@@ -451,36 +451,6 @@ Real.prototype.constructor = Real;
 
 exports.Real = Real;
 
-Range = function(ast_ctx, input) {
-	AstEntity.call(this, ast_ctx, 'Range');
-	if (input instanceof Array) {
-		[ this.min, this.max ] = input;
-		if (this.min && this.max) {
-			this._str = "[" + this.min.toString() + ", " + this.max.toString() + "]";
-		} else {
-			this.min = this.max = null;
-			ast_ctx.astError("Error : invalid Range value")
-		}
-	} else if (input instanceof Range) {
-		this.min = input.min;
-		this.max = input.max;
-		this._str = input._str;
-	} else {
-		this.min = this.max = this._str = this.value = null;
-		ast_ctx.astError("Error : invalid Range value")
-	};
-
-	return this;
-}
-
-Range.prototype = Object.create(AstEntity.prototype);
-Range.prototype.constructor = Range;
-
-Range.prototype.toString = function() {
-	return this._str;
-}
-
-exports.Range = Range;
 
 Bool = function(ast_ctx, bool_val) {
 	AstEntity.call(this, ast_ctx, 'Bool');
@@ -606,7 +576,6 @@ StrIndent = function(ast_ctx, input, indent=0) {
 		ast_ctx.astError("Error : invalid String value")
 	};
 	initValue(this);
-	console.log("StrIndent : \"" + this._str + "\"")
 	return this;
 }
 
@@ -624,13 +593,7 @@ StrIndent.prototype.unindent = function(num) {
 	initValue(this);
 }
 
-
 exports.StrIndent = StrIndent;
-
-
-
-
-
 
 List = function(ast_ctx, input) {
 	AstEntity.call(this, ast_ctx, 'List');
@@ -650,7 +613,68 @@ List = function(ast_ctx, input) {
 List.prototype = Object.create(AstEntity.prototype);
 List.prototype.constructor = List;
 
+List.prototype.get = function(ele) {
+	return this.value[ele];
+}
+
+List.prototype.head = function() {
+	return this.value[0]
+}
+
+List.prototype.add = function(ele) {
+	this.value.push(ele)
+	return this;
+}
+
+List.prototype.isListOf = function(objectType) {
+	console.log(objectType)
+	return this.value.map(x => (x instanceof AstEntity && x.type == objectType)).reduce((x,y)=> x && y, true);
+}
+
+
 exports.List = List;
+
+Range = function(ast_ctx, input) {
+	AstEntity.call(this, ast_ctx, 'Range');
+	if (input instanceof List) {
+		list = input.value;
+		if (input.value.length == 2) {
+			// TODO verify is comparable and max > min and casts if necessary
+			this.min = list[0];
+			this.max = list[1];
+			this._str = input._str;
+		} else {
+			ast_ctx.astError("Error : a Range is a list of strictly 2 elements");
+		};
+	} else if (input instanceof Array) {
+		[ this.min, this.max ] = input;
+		if (this.min && this.max) {
+			this._str = "[" + this.min.toString() + ", " + this.max.toString() + "]";
+		} else {
+			this.min = this.max = null;
+			ast_ctx.astError("Error : invalid Range value")
+		}
+	} else if (input instanceof Range) {
+		this.min = input.min;
+		this.max = input.max;
+		this._str = input._str;
+	} else {
+		this.min = this.max = this._str = this.value = null;
+		ast_ctx.astError("Error : invalid Range value")
+	};
+
+	return this;
+}
+
+Range.prototype = Object.create(AstEntity.prototype);
+Range.prototype.constructor = Range;
+
+Range.prototype.toString = function() {
+	return this._str;
+}
+
+exports.Range = Range;
+
 
 ValueAssoc = function(ast_ctx, input) {
 	AstEntity.call(this, ast_ctx, 'ValueAssoc');
@@ -701,5 +725,28 @@ Dict = function(ast_ctx, input) {
 
 Dict.prototype = Object.create(AstEntity.prototype);
 Dict.prototype.constructor = Dict;
+
+Dict.prototype.get = function(id) {
+	return this.value[id];
+}
+
+Dict.prototype.set = function(id, val) {
+	if ((id instanceof 'string') && (val instanceof AstEntity)) {
+		this.value[id]=val;
+	}
+	return this;
+}
+
+Dict.prototype.setAssoc = function(assoc) {
+	if ((assoc instanceof ValueAssoc)) {
+		this.value[value.key]=value.val;
+	};
+	return this;
+}
+
+Dict.prototype.isDictOf = function(objectType) {
+	console.log(objectType)
+	return Object.values(this.value).map(x => (x instanceof AstEntity && x.type == objectType)).reduce((x,y)=> x && y, true);
+}
 
 exports.Dict = Dict;

@@ -138,11 +138,13 @@ test_mlstr : ( NEWLINE | str )* EOF;
 
 value
  : comparable_value
+ | dsl_ref
+ | dsl_def
  | null_value
  | nan
  | list 
  | map
- | range
+// | range
  | bool
  | short_str
  ; 
@@ -152,52 +154,66 @@ comparable_value
  | time
  | freq
  | infinity
+ | unbounded
  | number
  | timestamp
  | version
  ; 
   
+dsl_def
+ : '&' id WS? NEWLINE
+    INDENT value WS? NEWLINE? DEDENT
+ ;
+
+dsl_ref
+ : '*' id WS? NEWLINE?
+ ;
+
 list
- : '[' NEWLINE? value (',' NEWLINE? value)* NEWLINE? ']'                # jsonList
- | '[' NEWLINE? ']'                                                     # emptyList
- | ('-' INDENT value NEWLINE? DEDENT)+                                  # itemList
+ : '[' NEWLINE? WS? (value WS? ',' WS? NEWLINE?)* value WS? NEWLINE? ']'       # jsonList
+ | '[' WS? NEWLINE? ']'                                                     # emptyList
+ | ('-' INDENT value WS? NEWLINE? DEDENT)+                                  # itemList
  | NEWLINE INDENT                                                       
-      ('-' INDENT value NEWLINE? DEDENT)+
-   DEDENT                                                               # indentList
+   WS?    ('-' INDENT value WS? NEWLINE? DEDENT)+
+   DEDENT                                                                   # indentList
  ;
 
 map
- : '{' NEWLINE? (value_assoc ',' NEWLINE?)+ value_assoc NEWLINE? '}'    # jsonMap
- | '{' NEWLINE? '}'                                                     # emptyMap
- | ( value_assoc NEWLINE? )+                                            # itemMap
+ : '{' WS? NEWLINE? WS? (value_assoc WS? ',' WS? NEWLINE?)* value_assoc WS? NEWLINE? '}'     # jsonMap
+ | '{' WS? NEWLINE? WS? '}'                                                 # emptyMap
+ | ( value_assoc WS? NEWLINE? )+                                        # itemMap
  | NEWLINE INDENT                                                       
-     ( value_assoc NEWLINE? )+
+     ( value_assoc WS? NEWLINE? )+
    DEDENT                                                               # indentMap
  ;
 
 value_assoc
- : id ':' value 
- | id ':' NEWLINE
+ : id ':' WS? value WS? 
+ | id ':' WS? NEWLINE
    INDENT
-     value NEWLINE?
+     value WS? NEWLINE?
    DEDENT
  ;
 
+ range
+  : list 
+  ;
+/*
 range
- : '[' size ',' size ']'
- | '[' time ',' time ']'
- | '[' freq ',' freq ']'
- | '[' number ',' number ']'
- | '[' number ',' infinity ']'
- | '[' infinity ',' infinity ']'
- | '[' infinity ',' number ']'
- | '[' timestamp ',' timestamp ']'
- | '[' version ',' version ']'
- | '[' unbounded ',' unbounded ']'
- | '[' comparable_value ',' unbounded ']'
- | '[' unbounded ',' comparable_value ']'
+ : '[' WS? size WS? ',' WS? size WS?']'
+ | '[' WS? time WS? ',' WS? time WS? ']'
+ | '[' WS? freq WS? ',' WS? freq WS? ']'
+ | '[' WS? number WS? ',' WS? number WS? ']'
+ | '[' WS? number WS? ',' WS? infinity WS? ']'
+ | '[' WS? infinity WS? ',' WS? infinity WS? ']'
+ | '[' WS? infinity WS? ',' WS? number WS? ']'
+ | '[' WS? timestamp WS? ',' WS? timestamp WS? ']'
+ | '[' WS? version WS? ',' WS? version WS? ']'
+ | '[' WS? unbounded WS? ',' WS? unbounded WS? ']'
+ | '[' WS? comparable_value WS? ',' WS? unbounded WS? ']'
+ | '[' WS? unbounded WS? ',' WS? comparable_value WS? ']'
  ;
-
+*/
 short_str
  : STRING_LITERAL WS?            # strLiteral
  | (alltokens WS?)+                    # strAlltokens
@@ -329,6 +345,8 @@ symbols
  | MINUS
  | OPEN_BRACE
  | CLOSE_BRACE
+ | ANCHOR
+ | REF
  | UNKNOWN_CHAR
  ;
  
@@ -467,6 +485,8 @@ BIN_INTEGER
  : [+-]? ZERO [bB] BIN_DIGIT+
  ;
 
+ANCHOR: '&';
+REF: '*';
 MLPREF: [|>][+-]?;
 COMMA : ',';
 COLON : ':';

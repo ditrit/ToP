@@ -7,6 +7,7 @@ ToscaAstBuilder = function(annotations, filename=null) {
 	this.last        = null;
 	this.annotations = annotations;
 	this.filename    = filename;
+	this.dsl_defs    = [];
 	return this;
 };
 
@@ -18,18 +19,7 @@ exports.ToscaAstBuilder = ToscaAstBuilder;
 ToscaAstBuilder.prototype.setValue = function(val=null) {
 	let ctx = val.ast_ctx.rule_ctx;
 	ctx.value = val;	
-/*
-	let ctxval = this.values[ctx];
-	if (!ctxval) {
-		this.values[ctx] = val
- 	} else if (ctxval instanceof Array) {
-		console.log("push de " + val + "sur " + this.values[ctx]);
-		this.values[ctx].push(val);
-		console.log("--> " + this.values[ctx]);
-	} else {
-		this.values[ctx] = [ ctxval, val ]		
-	}
-*/
+
 	this.last = ctx.value;
 }
 
@@ -222,6 +212,40 @@ ToscaAstBuilder.prototype.exitValue = function(ctx) {
 	}
 }
 
+// Exit a parse tree produced by ToscaParser#desl_def.
+ToscaAstBuilder.prototype.exitDsl_def = function(ctx) {
+	var ast_ctx = this.astCtx(ctx);
+	idChild     = ctx.id();  
+	valueChild  = ctx.value();
+	if (idChild && valueChild) {
+		let id  = idChild.getText();
+		let val = this.getValue(valueChild);
+		this.dsl_defs[id] = val;
+		this.setValue(new values.ValueAssoc(ast_ctx, [ id,  val]));
+	} else {
+		ast_ctx.astError("ERROR on dsl_definition");
+	}
+}
+
+// Exit a parse tree produced by ToscaParser#desl_def.
+ToscaAstBuilder.prototype.exitDsl_ref = function(ctx) {
+	var ast_ctx = this.astCtx(ctx);
+	idChild     = ctx.id();  
+	if (idChild) {
+		let id  = idChild.getText();
+		let val = this.dsl_defs[id];
+		if (val instanceof AstEntity) {
+			let type = val.type;
+			this.setValue(new values[type](ast_ctx, val));
+		} else {
+			ast_ctx.astError("ERROR : no Tosca value found for reference");
+		}
+	} else {
+		ast_ctx.astError("ERROR : no id found for reference");
+	}
+}
+
+
 // Exit a parse tree produced by ToscaParser#timestamp.
 ToscaAstBuilder.prototype.exitTimestamp = function(ctx) {
 	var ast_ctx = this.astCtx(ctx);
@@ -251,21 +275,18 @@ ToscaAstBuilder.prototype.exitUnbounded = function(ctx) {
 // Exit a parse tree produced by ToscaParser#range.
 ToscaAstBuilder.prototype.exitRange = function(ctx) {
 	var ast_ctx = this.astCtx(ctx);
-	let left  = ctx.children[1];
-	let right = ctx.children[3];
-	debugger;
-	if (left && right) {
-		let range = [ this.getValue(left), this.getValue(right) ];
+	let list  = ctx.list();
+	if (list) {
+		let range = this.getValue(list);
 		this.setValue(new values.Range(ast_ctx, range));
 	} else {
-		ast_ctx.astError("ERROR : No Comparable value found")
+		ast_ctx.astError("ERROR : No range value found")
 	}
 }
 
 // Exit a parse tree produced by ToscaParser#str
 ToscaAstBuilder.prototype.exitStr = function(ctx) {
 	var ast_ctx = this.astCtx(ctx);
-	debugger;
 	let input = ctx.getText(); 
 	if (input) {
 		this.setValue(new values.Str(ast_ctx, input));
@@ -278,7 +299,6 @@ ToscaAstBuilder.prototype.exitStr = function(ctx) {
 // Exit a parse tree produced by ToscaParser#str, 'simple' alternative.
 ToscaAstBuilder.prototype.exitStrSimple = function(ctx) {
 	var ast_ctx = this.astCtx(ctx);
-	debugger;
 	let input = ctx.children[0]; 
 	if (input) {
 		let val = this.getValue(input);
@@ -293,7 +313,6 @@ ToscaAstBuilder.prototype.exitStrSimple = function(ctx) {
 // Exit a parse tree produced by ToscaParser#str, 'multiple' alternative
 ToscaAstBuilder.prototype.exitStrMulti = function(ctx) {
 	var ast_ctx = this.astCtx(ctx);
-	debugger;
 	if (ctx.sub_mlstring() instanceof Array) {
 		let lines = ctx.sub_mlstring().map( x => this.getValue(x));
 		let indent = (ctx.INDENT) ? ctx.INDENT().getText().length : 0;
@@ -331,7 +350,6 @@ ToscaAstBuilder.prototype.exitStrAlltokens = function(ctx) {
 ToscaAstBuilder.prototype.exitStrSubAllTokens = function(ctx) {
 	var ast_ctx = this.astCtx(ctx);
 	let str  = ctx.getText();
-	console.log("exitStrSubAlltokens");
 	if (str) {
 		this.setValue(new values.StrIndent(ast_ctx, str));
 	} else {
@@ -342,7 +360,6 @@ ToscaAstBuilder.prototype.exitStrSubAllTokens = function(ctx) {
 // Exit a parse tree produced by ToscaParser#str_mlstring, 'strSubMulti' alternative
 ToscaAstBuilder.prototype.exitStrSubMulti = function(ctx) {
 	var ast_ctx = this.astCtx(ctx);
-	console.log("exitStrSubMulti");
 	let lines = ctx.sub_mlstring().map( x => this.getValue(x));
 	let indent = (ctx.INDENT) ? ctx.INDENT().getText().length : 0;
 	if (lines) {
