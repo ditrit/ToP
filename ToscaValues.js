@@ -60,6 +60,8 @@ AstEntity.prototype.toString = function() {
 
 AstEntity.prototype.constructor = AstEntity;
 
+exports.AstEntity = AstEntity;
+
 ComparableValue = function(ast_ctx, type) {
 	AstEntity.call(this, ast_ctx, type);
 }
@@ -100,6 +102,7 @@ ComparableValue.prototype.lessOrEqual = function(other) {
 	return this.lessThan(other) || this.equals(other)
 }
 
+exports.ComparableValue = ComparableValue;
 
 ScalarUnit = function(ast_ctx, type, input) {
 

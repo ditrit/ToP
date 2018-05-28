@@ -2,12 +2,14 @@
 var values=require("./ToscaValues.js"); 
 const Ajv = require("ajv");
 
-var ajv = new Ajv({allErrors: true, jsonPointers: true});
+var ajv = new Ajv({allErrors: false, jsonPointers: true, verbose: true});
 var ajvk = require('ajv-keywords')(ajv,'instanceof');
-require('ajv-errors')(ajv /*, {singleError: true} */);
+//require('ajv-errors')(ajv /*, {singleError: true} */);
 
 var instanceofDef = require('ajv-keywords').get('instanceof').definition;
 
+instanceofDef.CONSTRUCTORS.Value = values.AstEntity;
+instanceofDef.CONSTRUCTORS.ComparableValue = values.ComparableValue;
 instanceofDef.CONSTRUCTORS.Dict = values.Dict;
 instanceofDef.CONSTRUCTORS.List = values.List;
 instanceofDef.CONSTRUCTORS.ScalarUnit = values.ScalarUnit;

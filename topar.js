@@ -104,16 +104,14 @@ function simpleError(message, ast) {
 
 function getErrors(schema_errors, ast) {
   let annotations = [];
-  for (error of schema_errors) {
-    let data_path = error.dataPath;
-    let keyword = error.keyword;
-    let message = error.message;
-    let data = pointer.get(ast, data_path)
-    if ((keyword == "errorMessage") && data && data.ast_ctx) {
+  for (let error of schema_errors) {
+    let data = pointer.get(ast, error.dataPath)
+    if (data && data.ast_ctx) {
       let txt = data.ast_ctx.rule_ctx.getText()
-      let content = (txt.length < 50) ? `"txt"` : `"${txt.trim().slice(0, 23)}...${txt.trim().slice(-23)}"`
+      let content = (txt.length < 80) ? `"${txt}"` : `"${txt.trim().slice(0, 38)}...${txt.trim().slice(-38)}"`
       annotations.push( {
-        message:    error.message, 
+        keyword:    error.keyword,
+        schema:     JSON.stringify(error.schema),
         filename:   data.ast_ctx.filename.split('/').pop(),
         row:        data.ast_ctx.start_row,
         column:     data.ast_ctx.start_col,
@@ -173,6 +171,10 @@ function parse(input, rule_name='tosca_input', step=phase.ast, filename=null) {
     var tree = parser[rule_name]();
   }
 
+  if (annotations.length > 0) {
+      return new ToscaErrors(annotations);
+  };
+  
   if (step >= phase.ast) {
     var extractor = new ToscaAstBuilder(annotations, filename);
     antlr4.tree.ParseTreeWalker.DEFAULT.walk(extractor, tree);
