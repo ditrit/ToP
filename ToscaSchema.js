@@ -59,6 +59,24 @@ ajv.addKeyword('dictRequired', {
   }
 });
 
+ajv.addKeyword('dictPatternRequired', {
+  type: 'object',
+  macro: function (sch) {
+    return {
+      "instanceof": "Dict",
+      "properties": {
+         "value": {
+            "patternRequired": sch
+   }
+      }
+    }
+  },
+  metaSchema: {
+    type: 'array',
+    items: { type: 'string' }
+  }
+});
+
 ajv.addKeyword('dictMinProperties', {
   type: 'object',
   macro: function (sch) {
@@ -109,9 +127,8 @@ ajv.addKeyword('dictProperties', {
 	            : false,
           "patternProperties":
             (parentSchema.dictPatternProperties)
-              ? parentSchema.dictAdditionalProperties
+              ? parentSchema.dictPatternProperties
               : {}
-
         }
       }
     };
@@ -178,7 +195,7 @@ ajv.addKeyword('listItems', {
       "properties": {
         "value": {
           "type": "array",
-          "items": sch,
+          "items": (sch.list) ? sch.list : sch,
           "additionalItems":
             (parentSchema.listAdditionalItems)
               ? parentSchema.listAdditionalItems
@@ -186,7 +203,7 @@ ajv.addKeyword('listItems', {
           "uniqueItems":
             (parentSchema.listUniqueItems)
               ? parentSchema.listUniqueItems
-              : true
+              : false
         }
       }
     };
@@ -195,6 +212,40 @@ ajv.addKeyword('listItems', {
   },
   metaSchema: {
     type: 'object',
+  }
+});
+
+ajv.addKeyword('listMinItems', {
+  type: 'object',
+  macro: function (sch) {
+    return {
+      "instanceof": "List",
+      "properties": {
+         "value": {
+            "minItems": sch
+   }
+      }
+    }
+  },
+  metaSchema: {
+    type: 'number',
+  }
+});
+
+ajv.addKeyword('listMaxItems', {
+  type: 'object',
+  macro: function (sch) {
+    return {
+      "instanceof": "List",
+      "properties": {
+         "value": {
+            "maxItems": sch
+   }
+      }
+    }
+  },
+  metaSchema: {
+    type: 'number',
   }
 });
 

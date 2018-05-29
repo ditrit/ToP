@@ -72,6 +72,7 @@ function load_schemas() {
         }
         try {
           for (let name in schema) {
+            //console.log("schema name : " + name)
             schemas[version][name] = ToscaSchemas.ajv.compile(schema[name]);
           };
         } catch(e) {
