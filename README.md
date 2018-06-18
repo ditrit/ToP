@@ -1,5 +1,5 @@
-# ToPar
-ToPar stands for *Tosca Parser* and aims to be a fully compliant Tosca OASIS normative parser 
+# ToP
+ToP stands for *Tosca Parser* and aims to be a fully compliant Tosca OASIS normative parser 
 (cf [TOSCA Simple Profile in YAML Version 1.2](http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.2/TOSCA-Simple-Profile-YAML-v1.2.pdf)).
 All features defined in the TOSCA 1.2 standard are implemented with the exception of *'dsl_definitions'*.
 
