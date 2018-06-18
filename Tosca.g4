@@ -118,1733 +118,33 @@ tokens { INDENT, DEDENT }
   }
 }
 
-@parser::header {
-
-  class UnorderedClauses {
-  
-    constructor(thisparser) {
-    this.items = {};
-    this.mandatory =  [[]];
-    this.label = "";
-    this.thisparser = thisparser;
-    
-    return this;
-    };
-
-    add(clause) {
-          let clauseToken = clause.start.text; 
-          this.items[clauseToken] = this.items[clauseToken] + 1 || 1;
-    };
-
-    setLabel(label) {
-          this.label = label; 
-    };
-
-    setMandatory(mandatory) {
-          var ret = null;
-          if (isString(mandatory)) {
-            this.mandatory = [[ mandatory ]]
-          } else if (!(mandatory instanceof Array) || mandatory.length == 0) {
-            this.mandatory = [[]]
-          } else if (!(mandatory[0] instanceof Array)) { 
-            this.mandatory = [ mandatory ]
-          } else {
-            this.mandatory = mandatory;
-          }
-    }
-
-    checkMandatory() {
-      	  var absent = []
-      	  var one_ok = (this.mandatory == [[]] ) ? true : false
-      	  
-      	  for (let or_item of this.mandatory) {
-      	    let clause_absent = []
-      	    let clause_ok = true
-      	    for (let item of or_item) {
-      	      if (!(item in this.items)) {
-      	        clause_absent.push(item)
-      	        clause_ok = false
-      	      }
-      	    }
-      	    absent.push(clause_absent)
-            one_ok = (one_ok) ? one_ok : clause_ok 
-      	  }
-      	  let expected = absent.map(x => x.join("','")).join("' or '");
-      	  return { 'ok': one_ok, 'message': expected } 
-    }
-    
-    check() {
-          let expected = this.checkMandatory()
-          if (! expected.ok) {
-            this.thisparser.notifyErrorListeners(
-               "No '" + expected.message + "' value provided" + 
-     	        (this.label.length >0 ? " for '" + this.label + "'" : ""));
-    	  }
-     	  for (let i in this.items) 
-     	    if (this.items[i] > 1) 
-     	      this.thisparser.notifyErrorListeners("The clause '" + i + "' is duplicated '" + 
-     	        (this.label.length >0 ? " in '" + this.label + "'" : "")); 
-    };
-    
-  };
-
-  function isString(s) {
-    return typeof(s) === 'string' || s instanceof String;
-  }
-
-   function isArray(a) {
-    return a instanceof Array;
-  }
-
-   function isRegexp(r) {
-    return ((r instanceof RegExp) || isString(r));
-  }
-
-}
-
-
 /*
  * parser rules
  */
 
+tosca_input : ( NEWLINE | map )* EOF ;
 
-tosca_input
- : ( NEWLINE | service_template )* EOF
- ;
-
-test_attributes : ( NEWLINE | attributes )* EOF ;
-test_properties : ( NEWLINE | properties )* EOF ;
-test_inputs : ( NEWLINE | inputs )* EOF ;
+test_size : ( NEWLINE | size )* EOF ;
+test_time : ( NEWLINE | time )* EOF ;
+test_freq : ( NEWLINE | freq )* EOF ;
+test_versions : ( NEWLINE | version )* EOF ;
+test_integers : ( NEWLINE | integer )* EOF ;
+test_reals : ( NEWLINE | real )* EOF ;
+test_timestamp : ( NEWLINE | timestamp )* EOF ;
 test_maps : ( NEWLINE | map )* EOF ;
 test_lists : ( NEWLINE | list )* EOF ;
-test_namespace : ( NEWLINE | namespace )* EOF ;
-test_descr : ( NEWLINE | descr )* EOF ;
-test_constraints : ( NEWLINE | constraints )* EOF ;
-test_metadata : ( NEWLINE | metadata )* EOF ;
-test_capabilities : ( NEWLINE | capability_defs )* EOF ;
-test_requirements : ( NEWLINE | requirement_defs )* EOF ;
-test_interfaces : ( NEWLINE | interface_defs )* EOF ;
-test_artifacts : ( NEWLINE | artifact_defs )* EOF ;
 test_short_str : ( NEWLINE | short_str )* EOF;
 test_mlstr : ( NEWLINE | str )* EOF;
 
-
-descr
- : 'description' ':' str? NEWLINE?
- ;
-
-service_template
- : tosca_definitions_version
-   { let u = new UnorderedClauses(this); u.label = 'service template';}
-   ( service_template_clause {u.add($service_template_clause.ctx)} )*
-   { u.check(); }
- ;
- 
-service_template_clause
- : namespace 				
- | metadata					
- | repositories				
- | file_imports				
- | descr 					
- | artifact_types			
- | data_types				
- | capability_types			
- | interface_types			
- | relationship_types
- | node_types				
- | group_types				
- | policy_types				
- | topology_template
- ;
-
-topology_template
- : 'topology_template' ':' NEWLINE
-      ( INDENT
-        { let u = new UnorderedClauses(this); u.label = 'topology_template'; }
-          (topology_template_clause {u.add($topology_template_clause.ctx)} )+
-        DEDENT
-	    { u.check(); } )?
- ;
-
-topology_template_clause
- : descr
- | input_parameters
- | output_parameters
- | node_templates
- | relationship_templates
- | group_defs
- | policy_defs
- | substitution_mapping
- | imperative_workflows
- ;                                   
- 
-substitution_mapping 
- : 'substitution_mappings' ':' NEWLINE
-   ( INDENT
-       substitution_mapping_node_type+
-     DEDENT )?
- ;
-
-substitution_mapping_node_type
- : 'node_type' ':' id NEWLINE 
-      ( INDENT
-        { let u = new UnorderedClauses(this); u.label = 'node_type substitution'; }
-          (substitution_mapping_clause {u.add($substitution_mapping_clause.ctx)})+
-        DEDENT
-        { u.check(); } )?
- ;
- 
-substitution_mapping_clause
- : properties_mapping
- | capabilities_mapping
- | requirements_mapping
- | attributes_mapping
- | interfaces_mapping
- ;
-
-properties_mapping
- : 'properties' ':' NEWLINE
-     ( INDENT
-         property_mapping+
-       DEDENT )?
- ;
-
-property_mapping
- : id ':' value NEWLINE
- | id ':' '[' id ']' NEWLINE
- | id ':' '[' id ',' id ']' NEWLINE
- | id ':' '[' id ',' id ',' id ']' NEWLINE
- | id ':' NEWLINE
-     INDENT
-       property_mapping_clause
-     DEDENT
- ;
-
-property_mapping_clause
- : 'mapping' ':' id NEWLINE
- | 'mapping' ':' '[' id ',' id ']' NEWLINE
- | 'mapping' ':' '[' id ',' id ',' id ']' NEWLINE
- | 'value' ':' value NEWLINE?
- ;
-
-attributes_mapping
- : 'attributes' ':' NEWLINE
-     ( INDENT
-         attribute_mapping+
-       DEDENT )?
- ;
-
-attribute_mapping
- : id ':' value NEWLINE
- | id ':' '[' id ']' NEWLINE
- | id ':' '[' id ',' id ']' NEWLINE
- | id ':' '[' id ',' id ',' id ']' NEWLINE
- | id ':' NEWLINE
-     INDENT
-       attribute_mapping_clause
-     DEDENT
- ;
-
-attribute_mapping_clause
- : 'mapping' ':' id NEWLINE
- | 'mapping' ':' '[' id ',' id ']' NEWLINE
- | 'mapping' ':' '[' id ',' id ',' id ']' NEWLINE
- | 'value' ':' value NEWLINE
- ;
-
-capabilities_mapping
- : 'capabilities' ':' NEWLINE
-     ( INDENT
-         capability_mapping+
-       DEDENT )?
- ;
-
-capability_mapping
- : id ':' '[' id ',' id ']' NEWLINE
- | id ':' NEWLINE
-     INDENT
-       capability_mapping_clause
-     DEDENT
- ;
-
-capability_mapping_clause
- : 'mapping' ':' '[' id ',' id ']' NEWLINE
- | 'properties' ':' NEWLINE
-     ( INDENT
-       ( id ':' value NEWLINE? )+
-       DEDENT )?
- | 'attributes' ':' NEWLINE
-     ( INDENT
-       ( id ':' value NEWLINE? )+
-       DEDENT )?
- ;
-
-requirements_mapping
- : 'requirements' ':' NEWLINE
-     ( INDENT
-         capability_mapping+
-       DEDENT )?
- ;
-
-requirement_mapping
- : id ':' '[' id ',' id ']' NEWLINE
- | id ':' NEWLINE
-     ( INDENT
-         capability_mapping_clause
-       DEDENT )?
- ;
-
-requirement_mapping_clause
- : 'mapping' ':' '[' id ',' id ']' NEWLINE
- | 'properties' ':' NEWLINE
-     ( INDENT
-       ( id ':' value NEWLINE? )+
-     DEDENT )?
- | 'attributes' ':' NEWLINE
-     ( INDENT
-       ( id ':' value NEWLINE? )+
-     DEDENT )?
- ;
-
-interfaces_mapping
- : 'interfaces' ':' NEWLINE
-   (INDENT
-     interface_mapping
-    DEDENT )?
- ;
-
-interface_mapping
- : id ':' NEWLINE
-    INDENT
-      ( id ':' id NEWLINE )+
-    DEDENT
- ;
-
-node_templates
- : 'node_templates' ':' NEWLINE
-	 (INDENT
-		node_template+ 
-	 DEDENT )?
- ;
-
-node_template
- : id ':' NEWLINE
-     INDENT
-     { let u = new UnorderedClauses(this);
-       u.setMandatory( [['type'],['copy']]); u.label = $id.text }
-       (node_template_clause {u.add($node_template_clause.ctx)} )+
-     DEDENT
- 	 { u.check(); }
- ;
- 
-node_template_clause
- : 'type' ':' idtype NEWLINE
- | descr
- | 'directives' ':' '[' short_str (',' short_str)* ']' NEWLINE 
- | 'directives' ':' NEWLINE
-     ( INDENT
-       ('-' INDENT short_str NEWLINE DEDENT)+
-	 DEDENT )?
- | entity_metadata
- | property_assignments
- | attribute_assignments
- | node_requirement_assignments
- | capability_assignments
- | interface_defs_template
- | artifact_defs
- | node_filter
- | 'copy' ':' id NEWLINE
- ;
-
-
-relationship_templates
- : 'relationship_templates' ':' NEWLINE
-	 ( INDENT
-		relationship_template+ 
-	 DEDENT )?
- ;
-
-relationship_template
- : id ':' NEWLINE
-     INDENT
-     { let u = new UnorderedClauses(this);
-       u.setMandatory([['type'],['copy']]); u.label = $id.text }
-       (relationship_template_clause 
-         {u.add($relationship_template_clause.ctx)} )+
-     DEDENT
- 	 { u.check(); }
- ;
- 
-relationship_template_clause
- : 'type' ':' idtype NEWLINE
- | descr
- | entity_metadata
- | property_assignments
- | attribute_assignments
- | interface_defs_template
- | 'copy' ':' id NEWLINE
- ;
- 
-tosca_definitions_version
- : 'tosca_definitions_version' ':' URI NEWLINE
-   { [ 'http://docs.oasis-open.org/tosca/ns/simple/yaml/1.2',
-       'http://docs.oasis-open.org/tosca/ns/simple/yaml/1.1',
-       'http://docs.oasis-open.org/tosca/ns/simple/yaml/1.0' ].includes($URI.text) }?
- | 'tosca_definitions_version' ':' ID NEWLINE
-   { [ 'tosca_simple_yaml_1_2', 'tosca_simple_yaml_1_1', 'tosca_simple_yaml_1_0' ].includes($ID.text) }?
- ;
-
-namespace
- : 'namespace' ':' URI NEWLINE
- ;
-
- 
-metadata
- : 'metadata' ':' NEWLINE
-     ({ let u = new UnorderedClauses(this); u.label = 'metadata' }
-     INDENT
-       ( metadata_clause NEWLINE {u.add($metadata_clause.ctx) })+
-     DEDENT
- 	 { u.check(); })?
- ;
-
-metadata_clause
- : 'template_name' ':' short_str
- | 'template_author' ':' short_str
- | 'template_version' ':' version
- | id ':' value
- ;
-
-repositories
- : 'repositories' ':' NEWLINE
-	  (INDENT
-	    repository+
-	  DEDENT)? 
- ;
-
-repository
- : repository_short 
- | repository_detail 
- ;
-
-repository_short
- : id ':' URI NEWLINE
- ;
- 
-repository_detail
- : id ':' NEWLINE
-     { let u = new UnorderedClauses(this);
-       u.setMandatory( ['url']);
-       u.label = $id.text }
-	INDENT
-	  ( repository_clause {u.add($repository_clause.ctx) } )+
-	DEDENT 
-	{ u.check(); }
- ;
- 
-repository_clause
- : repository_url
- | descr
- | repository_cred
- ;
- 
-repository_url
- : 'url' ':' URI NEWLINE
- ;
-
-repository_cred
- : id ':' 
-     '{' NEWLINE? { $id.text == 'credential' }?
-        { let v = new UnorderedClauses(this); 
-          v.setMandatory( ['token']); v.label = 'credential' }
-        cred_clause {v.add($cred_clause.ctx) }  
-          (',' NEWLINE? cred_clause {v.add($cred_clause.ctx) } )* 
-     NEWLINE? '}' NEWLINE 
- | id ':' NEWLINE { $id.text == 'credential' }?
-     { let u = new UnorderedClauses(this); 
-      u.setMandatory( ['token']); u.label = 'credential' }
-	 INDENT
-	   ( cred_clause {u.add($cred_clause.ctx)} NEWLINE )+
-	 DEDENT
-	 { u.check(); }
- ;
-
-cred_clause
- : id 
-	 { ['protocol', 'token', 'token_type', 'user'].includes($id.text) }?
-   ':' short_str
- ;
-
-file_imports
- : 'imports' ':' NEWLINE
-	  (INDENT
-		file_import+ 
-	  DEDENT)?
- ;
-
-file_import
- : '-' INDENT (URI| filepath) NEWLINE DEDENT 
- | '-' INDENT id ':' (URI| filepath) NEWLINE DEDENT 
- | '-' INDENT id ':' NEWLINE
-         { let u = new UnorderedClauses(this); 
-           u.setMandatory( ['file']); u.label = $id.text}
-	     INDENT
-	       ( file_import_clause {u.add($file_import_clause.ctx) } )+
-	     DEDENT
-	     { u.check(); }
-	   DEDENT
- ;
-
-file_import_clause
- : 'file' ':' (URI| filepath) NEWLINE
- | 'repository' ':' id NEWLINE
- | 'namespace_prefix' ':' id NEWLINE
- | 'namespace_uri' ':' URI NEWLINE
- ;
-
-filepath
- : '.' id? ('/' ('..'| id) )* '/'?
- | '..' ('/' ('..' | id))* '/'?
- | id ('/' ('..' | id))* '/'?
- | ('/' ('..' | id))+ '/'?
- ;
-  
-artifact_defs
- : 'artifacts' ':' NEWLINE
-      ( INDENT
-		  artifact_def+
-        DEDENT )? 
- ;
-
-artifact_def
- : id ':' (URI|filepath) NEWLINE 
- | id ':' NEWLINE
-    { let u = new UnorderedClauses(this);
-      u.setMandatory( ['type', 'file']); u.label = $id.text; }
- 	INDENT
- 	  (artifact_def_clause {u.add($artifact_def_clause.ctx) })+
-	DEDENT
- 	{ u.check(); }
- ;
-
-artifact_def_clause
- : 'type' ':' idtype  NEWLINE 
- | 'file' ':' (URI|filepath) NEWLINE
- | 'repository' ':' id NEWLINE
- | descr
- | 'deploy_path' ':' filepath NEWLINE
- ;
-
-node_requirement_assignments
- : 'requirements' ':' NEWLINE
-	  INDENT
-		node_requirement_assignment+
-	  DEDENT
- ;
-
-node_requirement_assignment
- : '-' INDENT id ':' id NEWLINE DEDENT
- | '-' INDENT id ':' NEWLINE
-         INDENT
-	     { let u = new UnorderedClauses(this); }
-           ( node_requirement_assignment_clause 
-             {u.add($node_requirement_assignment_clause.ctx)} )+
-         DEDENT
- 	     { u.check(); }
- 	  DEDENT
- ;
-
-node_requirement_assignment_clause
- : 'node' ':' id NEWLINE
- | 'relationship' ':' id NEWLINE
- | 'relationship' ':' NEWLINE
-     INDENT
-     { let u = new UnorderedClauses(this); }
-       ( node_requirement_ass_rel_clause 
-         {u.add($node_requirement_ass_rel_clause.ctx)})+
-     DEDENT
-     { u.check(); }	 
- | 'capability' ':' id NEWLINE
- | 'occurrences' ':' range NEWLINE
- | node_filter
- ;
-
-node_requirement_ass_rel_clause
- : 'type' ':'  idtype NEWLINE
- | property_assignments
- | interface_defs_template
- ;
-
-properties
- : 'properties' ':' NEWLINE
-     ( INDENT
-       property+
-     DEDENT )?
- ;
- 
-property
- : id ':' NEWLINE 
-     { let u = new UnorderedClauses(this);
-       u.setMandatory( ['type']); u.label = $id.text; }
- 	 INDENT
- 	   (property_clause {u.add($property_clause.ctx) } )+
- 	 DEDENT
- 	 { u.check(); }
- ;
-
-property_clause
- : 'type' ':' idtype  NEWLINE               
- | descr  
- | constraints 					        
- | 'required' ':' bool  NEWLINE         
- | 'default' ':' value  NEWLINE?         
- | 'status' ':' id NEWLINE
-       { ['supported', 'unsupported', 'experimental', 'deprecated'].includes($id.text) }?
- | entry_decl
- | entity_metadata
- ;
-// | 'external-schema:' str NEWLINE? a priori erreur dans le doc : le schema est defini en contrainte
-
-property_assignments
- : 'properties' ':' NEWLINE
-	 ( INDENT
-		(property_assignment )+
-	 DEDENT )? 
- ;
-
-/* Forme étendue prévue dans la norme pour les attributs mais 
- * pas pour les propriétés. A priori incohérent, nous 
- * l'autorisons aussi pour les propriétés */
-property_assignment
- : id ':' value_expr NEWLINE
- | id ':' value NEWLINE
- | id ':' NEWLINE
-	 INDENT
-     { let u = new UnorderedClauses(this);
-       u.setMandatory( ['value']); u.label = $id.text; }
-	  (property_assignment_clause {u.add($property_assignment_clause.ctx)} )+
- 	 DEDENT
- 	 { u.check(); }
- ;
-
-property_assignment_clause
- : descr
- | 'value' ':' value_expr
- | 'value' ':' value
- ;
-
-attributes
- : 'attributes' ':' NEWLINE
-     ( INDENT
-       attribute+
-     DEDENT )?
- ;
- 
-attribute
- : id ':' NEWLINE 
-     { let u = new UnorderedClauses(this);
-       u.setMandatory( ['type']); u.label = $id.text }
- 	 INDENT
- 	   (attribute_clause {u.add($attribute_clause.ctx) } )+
- 	 DEDENT
- 	 { u.check(); }
- ;
-
-attribute_clause
- : 'type' ':' idtype  NEWLINE               
- | descr        
- | 'default' ':' value  NEWLINE?    
- | 'status' ':' id NEWLINE
-       { ['supported', 'unsupported', 'experimental', 'deprecated'].includes($id.text) }?
- | entry_decl
- ;
-
-attribute_assignments
- : 'attributes' ':' NEWLINE
-	 ( INDENT
-		attribute_assignment+
-	 DEDENT)? 
- ;
-
-attribute_assignment
- : id ':' value NEWLINE
- | id ':' value_expr NEWLINE
- | id ':' NEWLINE 
-	 INDENT
-     { let u = new UnorderedClauses(this);
-       u.setMandatory( ['value']); u.label = $id.text; }
-	  (attribute_assignment_clause {u.add($attribute_assignment_clause.ctx)} )+
- 	 DEDENT
- 	 { u.check(); }
- ;
-
-capability_assignments
- : 'capabilities' ':' NEWLINE
-	 ( INDENT
-		capability_assignment+
-	 DEDENT )? 
- ;
-	
-capability_assignment
- : id ':' NEWLINE  
-	 INDENT
-     { let u = new UnorderedClauses(this); u.label = $id.text; }
-	  ( capability_assignment_clause {u.add($capability_assignment_clause.ctx)} )+
-	 DEDENT
- 	 { u.check(); }
- ;
-
-capability_assignment_clause
- : property_assignments
- | attribute_assignments
- ;
-  
-attribute_assignment_clause
- : descr
- | 'value' ':' value
- | 'value' ':' value_expr
- ;
-
-inputs
- : 'inputs' ':' NEWLINE
-     ( INDENT
-       property+
-     DEDENT )?
- ;
-
-input_assignments
- : 'inputs' ':' NEWLINE
-     ( INDENT
-       property_assignment+
-     DEDENT )?
- ;
- 
-input_parameters
- : 'inputs' ':' NEWLINE
-     ( INDENT
-       input_parameter+
-     DEDENT )?
- ;
- 
-input_parameter
- : id ':' NEWLINE 
-     { let u = new UnorderedClauses(this);
-       u.setMandatory( ['type']); u.label = $id.text }
- 	 INDENT
- 	   (io_parameter_clause {u.add($io_parameter_clause.ctx) } )+
- 	 DEDENT
- 	 { u.check(); }
- ;
- 
-output_parameters
- : 'outputs' ':' NEWLINE
-    ( INDENT
-       output_parameter+
-     DEDENT )?
- ;
- 
-output_parameter
- : id ':' NEWLINE 
-     { let u = new UnorderedClauses(this);
-       u.label = $id.text }
- 	 INDENT
- 	   (io_parameter_clause {u.add($io_parameter_clause.ctx) } )+
- 	 DEDENT
- 	 { u.check(); }
- ;
-
-io_parameter_clause
- : 'type' ':' idtype  NEWLINE               
- | descr        
- | constraints 					        
- | 'required' ':' bool  NEWLINE         
- | 'default' ':' value  NEWLINE?
- | 'status' ':' ID NEWLINE
-       { ['supported', 'unsupported', 'experimental', 'deprecated'].includes($ID.text) }?
- | entry_decl
- | 'value' ':' value_expr NEWLINE
- | 'value' ':' value NEWLINE?
- ;
- 
-constraints
- : 'constraints' ':' NEWLINE
-		( INDENT
-			( '-' INDENT constraint_clause NEWLINE? DEDENT)+
-		DEDENT )?
- ;
-
-constraint_clause
- : 'equal' ':'            value
- | 'greater_than' ':'     comparable_value 
- | 'greater_or_equal' ':' comparable_value 
- | 'less_than' ':'        comparable_value 
- | 'less_or_equal' ':'    comparable_value 
- | 'in_range' ':'         range 
- | 'valid_values' ':'     list 
- | 'length' ':'           ( str | list | map ) 
- | 'min_length' ':'       ( str | list | map )
- | 'max_length' ':'       ( str | list | map )
- | 'pattern' ':'          short_str
- | 'schema' ':'           str 
- ;
-
-entry_decl
- : entry_detailed
- | 'entry_schema' ':' idtype NEWLINE
- ;
-
-entry_detailed
- : 'entry_schema' ':' NEWLINE
-     ( { let u = new UnorderedClauses(this);
-       u.setMandatory( ['type']) }
-	 INDENT
-	   (entry_clause {u.add($entry_clause.ctx) } )+
-	 DEDENT
-	 { u.check(); } )?
- ;
-
-entry_clause
- : 'type' ':' idtype NEWLINE
- | descr
- | entry_decl              
- | constraints
- ;
-
-
-entity_metadata
- : 'metadata' ':' NEWLINE
-     { let u = new UnorderedClauses(this); u.label = 'metadata' }
-     ( INDENT
-       ( entity_metadata_clause 
-         {u.add($entity_metadata_clause.ctx) })+
-     DEDENT )?
- 	 { u.check(); }
- ;
-
-entity_metadata_clause
- : id ':' value NEWLINE
- ;
- 
-entity_clause
- : 'derived_from' ':' idtype NEWLINE
- | 'version' ':' version NEWLINE
- | entity_metadata
- | descr
- ;
-
-node_types
- : 'node_types' ':' NEWLINE
-	 ( INDENT
-		node_type+
-	   DEDENT )?
- ;
-
-node_type
- : id ':' NEWLINE
-	 INDENT
-     { let u = new UnorderedClauses(this); u.label = $id.text }
-         ( node_type_clause {u.add($node_type_clause.ctx) })+
-     DEDENT
- 	 { u.check(); }
- ;
-
-node_type_clause
- : entity_clause
- | properties
- | attributes
- | capability_defs
- | requirement_defs
- | interface_defs
- | artifact_defs
- | declarative_node_workflows
- ;
-	
-relationship_types
- : 'relationship_types' ':' NEWLINE 
-	 ( INDENT
-		relationship_type+
-	   DEDENT )?
-	;
-
-relationship_type
- : id ':' NEWLINE
-	 INDENT
-     { let u = new UnorderedClauses(this); u.label = $id.text }
-         ( relationship_type_clause {u.add($relationship_type_clause.ctx) })+
-     DEDENT
- 	 { u.check(); }
- ;
-
-relationship_type_clause
- : entity_clause
- | properties
- | attributes
- | interface_defs
- | 'valid_target_types' ':' '[' NEWLINE? id (',' NEWLINE? id)* NEWLINE? ']' NEWLINE
- | 'valid_target_types' ':' NEWLINE
-     (INDENT
-       ( '-' INDENT id NEWLINE DEDENT)+
-     DEDENT)?
- | declarative_rel_workflows
- ;
-
-artifact_types
- : 'artifact_types' ':' NEWLINE
-	 ( INDENT
-	     artifact_type+
-	   DEDENT )? 
- ;
-
-artifact_type
- : id ':' NEWLINE
-	 (INDENT
-     { let u = new UnorderedClauses(this); u.label = $id.text }
-	   ( artifact_type_clause {u.add($artifact_type_clause.ctx)} )+
-	 DEDENT
- 	 { u.check(); })?
- ;
-
- 
-
-artifact_type_clause
- : entity_clause 
- | 'file_ext' ':' '[' ']' NEWLINE
- | 'file_ext' ':' '[' short_str (',' short_str)* ']' NEWLINE
- | 'file_ext' ':' NEWLINE
-     (INDENT
-       ('-' INDENT short_str NEWLINE DEDENT)+
-     DEDENT)?
- | 'mime_type' ':' short_str NEWLINE
- | properties
- ;
-
-data_types
- : 'data_types' ':' NEWLINE 
-	 ( INDENT
-	     data_type+
-	   DEDENT )?
- ;
-	
-data_type
- : id ':' NEWLINE
-     INDENT
-     { let u = new UnorderedClauses(this); u.label = $id.text }
-       ( data_type_clause {u.add($data_type_clause.ctx)} )+
-     DEDENT
-     { u.check(); }
- ;
-     
-data_type_clause
- : entity_clause 
- | properties
- | constraints
- ;
-
-capability_types
- : 'capability_types' ':' NEWLINE
-     ( INDENT
-	     capability_type+
-	   DEDENT )?
- ;
-
-capability_type
- : id ':' NEWLINE
-	 (INDENT
-     { let u = new UnorderedClauses(this); u.label = $id.text }
-	   ( capability_type_clause 
-	     {u.add($capability_type_clause.ctx)})+
-	 DEDENT
-     { u.check(); })?	 
- ;
-
-capability_type_clause
- : entity_clause 
- | properties
- | attributes
- | 'valid_source_types' ':' '[' id (',' id)* ']' NEWLINE 
- | 'valid_source_types' ':' NEWLINE
-	 INDENT
-	   ( '-' INDENT id NEWLINE DEDENT )+
-	 DEDENT
- ; 
-
-capability_defs
- : 'capabilities' ':' NEWLINE
-	( INDENT
-	   capability_def+
-	  DEDENT )?
- ;
-
-// quid de 'occurecne' qui n'a pas de sens...
-capability_def
- : id ':' id NEWLINE
- | id ':' NEWLINE
-     INDENT
-     { let u = new UnorderedClauses(this); 
-       u.setMandatory( [ 'type' ]); u.label = $id.text }
-       ( capability_def_clause 
-         {u.add($capability_def_clause.ctx)})+
-     DEDENT
-     { u.check(); }	 
- ;
-
-capability_def_clause
- : 'type' ':' idtype NEWLINE
- | descr
- | properties
- | attributes
- | 'valid_source_types' ':' '[' ']' NEWLINE
- | 'valid_source_types' ':' '[' id (',' id)* ']' NEWLINE 
- | 'valid_source_types' ':' NEWLINE
-	 INDENT
-	   ( '-' INDENT id NEWLINE DEDENT)+
-	 DEDENT
- | 'occurrences' ':' range NEWLINE
- ;
-
-requirement_defs
- : 'requirements' ':' NEWLINE
-	( INDENT
-	    requirement_def+
-	  DEDENT )?
- ;
-
-requirement_def
- : '-' INDENT id ':' id NEWLINE DEDENT 
- | '-' INDENT id ':' NEWLINE
-         INDENT
-         { let u = new UnorderedClauses(this); 
-           u.setMandatory( [ 'capability' ]); u.label = $id.text }
-           ( requirement_def_clause {u.add($requirement_def_clause.ctx)})+
-         DEDENT
-         { u.check(); }
-       DEDENT
- ;
-
-requirement_def_clause
- : 'capability' ':' id NEWLINE
- | descr   // not in grammar of normative doc but in examples of normative doc...
- | 'node' ':' id NEWLINE
- | 'occurrences' ':' range NEWLINE
- | 'relationship' ':' id NEWLINE
- | 'relationship' ':' NEWLINE
-     INDENT
-     { let u = new UnorderedClauses(this); u.setMandatory( [ 'type' ]); }
-       ( requirement_def_relation_clause 
-         {u.add($requirement_def_relation_clause.ctx)})+
-     DEDENT
-     { u.check(); }	 
- ;
-
-requirement_def_relation_clause
- : 'type' ':'  idtype NEWLINE
- | interface_defs
- ;
-
-interface_types
- : 'interface_types' ':' NEWLINE 
-	 ( INDENT
-	     interface_type+
-	   DEDENT )?
- ;
-
-interface_type
- : id ':' NEWLINE
-	 (INDENT
-     { let u = new UnorderedClauses(this); }
-	  ( interface_type_clause {u.add($interface_type_clause.ctx)})+
- 	 DEDENT
-     { u.check(); })?	 
- ;
-
-interface_type_clause
- : entity_clause
- | inputs
- | operation_def
- ;
- 
-interface_defs
- : 'interfaces' ':' NEWLINE
-     ( INDENT
-         interface_def+
-       DEDENT )?
- ;
-
-interface_def
- : id ':' NEWLINE 
-     INDENT
-     { let u = new UnorderedClauses(this); 
-        u.label = $id.text; u.setMandatory( [ 'type' ]); }
-       ( interface_def_clause {u.add($interface_def_clause.ctx)})+
-     DEDENT
-     { u.check(); }	 
- ;
-
-interface_def_clause
- : 'type' ':' idtype NEWLINE 
- | inputs 
- | operation_def_intdef
- ;
-
-interface_defs_template
- : 'interfaces' ':' NEWLINE
-     ( INDENT
-         interface_def_template+
-	   DEDENT )? 
- ;
-
-interface_def_template
- : id ':' NEWLINE
-     INDENT
-     { let u = new UnorderedClauses(this); 
-       u.label = $id.text; }
-       (interface_def_template_clause 
-        {u.add($interface_def_template_clause.ctx)})+
-     DEDENT
-     { u.check(); }	 
- ;
-
-interface_def_template_clause
- : input_assignments
- | operation_def_template
- ;
- 
-operation_def
- : id ':'
-     { ! (['derived_from', 'description', 'inputs', 'metadata', 'version' ].includes($id.text)) }?
-     (URI | filepath) NEWLINE
- | id ':' NEWLINE
-     { ! (['derived_from', 'description', 'inputs', 'metadata', 'version' ].includes($id.text)) }?
-     INDENT
-     { let u = new UnorderedClauses(this); u.label = $id.text;}
-       (operation_def_clause {u.add($operation_def_clause.ctx)})+
-     DEDENT
-     { u.check(); }	      
- ;
-
-operation_def_intdef
- : id ':'
-     { ! (['type', 'inputs' ].includes($id.text)) }?
-     (URI | filepath) NEWLINE
- | id ':' NEWLINE
-     { ! (['type', 'inputs' ].includes($id.text)) }?
-     INDENT
-     { let u = new UnorderedClauses(this); u.label = $id.text;}
-       (operation_def_clause {u.add($operation_def_clause.ctx)})+
-     DEDENT
-     { u.check(); }	      
- ;
-
-operation_def_template
- : id ':'
-     { ! (['type', 'inputs' ].includes($id.text)) }?
-     (URI | filepath) NEWLINE
- | id ':' NEWLINE
-     { ! (['type', 'inputs' ].includes($id.text)) }?
-     INDENT
-     { let u = new UnorderedClauses(this); u.label = $id.text;}
-       (operation_def_clause_template {u.add($operation_def_clause_template.ctx)})+
-     DEDENT
-     { u.check(); }	      
- ;
-
- 
-operation_def_clause
- : descr
- | inputs
- | 'implementation' ':' ( URI | filepath) NEWLINE
- | 'implementation' ':' NEWLINE
-     INDENT
-     { let u = new UnorderedClauses(this); u.setMandatory( [ 'primary' ]); }
-       (implementation_clause {u.add($implementation_clause.ctx)})+
-     DEDENT
-     { u.check(); }	 
- ;
-
-operation_def_clause_template
- : descr
- | input_assignments
- | 'implementation' ':' ( URI | filepath) NEWLINE
- | 'implementation' ':' NEWLINE
-     INDENT
-     { let u = new UnorderedClauses(this); u.setMandatory( [ 'primary' ]); }
-       (implementation_clause {u.add($implementation_clause.ctx)})+
-     DEDENT
-     { u.check(); }	 
- ;
-
-implementation_clause
- : 'primary' ':' ( URI | filepath) NEWLINE
- | 'primary' ':' NEWLINE
-    { let u = new UnorderedClauses(this);
-      u.setMandatory( ['type', 'file']); }
- 	INDENT
- 	  (artifact_def_clause {u.add($artifact_def_clause.ctx) })+
-	DEDENT
- 	{ u.check(); }
- | 'dependencies' ':' NEWLINE
-     INDENT
-       ('-' INDENT ( URI | filepath | operation_artifact_def ) NEWLINE? DEDENT)+
-     DEDENT
- ;
-
-operation_artifact_def
- : { let u = new UnorderedClauses(this);
-      u.setMandatory( ['type', 'file']); }
- 	  (artifact_def_clause {u.add($artifact_def_clause.ctx) })+
-   { u.check(); }
- ; 
- 
-group_types
- : 'group_types' ':' NEWLINE
-	 ( INDENT
-	     group_type_item+
-	   DEDENT )?
- ;
-
-group_type_item
- : id ':' NEWLINE 
-     INDENT
-     { let u = new UnorderedClauses(this); u.label = $id.text; }
-	   (group_type_clause {u.add($group_type_clause.ctx)})+
-	 DEDENT
-	 { u.check(); }	 
- ;
-
-group_type_clause
- : entity_clause
- | properties
- | capability_defs
- | requirement_defs
- | interface_defs
- | 'members' ':' NEWLINE? '[' NEWLINE? id (',' NEWLINE? id)* NEWLINE? ']' NEWLINE
- | 'members' ':' NEWLINE
-     INDENT
-      ('-' INDENT id NEWLINE DEDENT )+
-     DEDENT
- ;
-
-group_defs
- : 'groups' ':' NEWLINE	
-	 ( INDENT
-		group_def+
-	 DEDENT )?
- ;
-	
-group_def
- : id ':' NEWLINE
-     INDENT
-     { let u = new UnorderedClauses(this); 
-       u.label = $id.text; u.setMandatory( [ 'type' ]) }
-	    ( group_def_clause {u.add($group_def_clause.ctx)})+
-	 DEDENT
-	 { u.check(); }	 
- ;
- 
-group_def_clause
- : 'type' ':' idtype NEWLINE
- | descr
- | entity_metadata
- | properties
- | 'members' ':' '[' id (',' id )* ']' NEWLINE
- | 'members' ':' NEWLINE 
- 	 INDENT
-	   ( '-' INDENT id NEWLINE DEDENT )+
-	 DEDENT
-	/* id=type TOSCA (noeud, capacité, group) en coherence avec le type 
-	 * meme si la dans la definition, la norme ne reference que les node templates 
-	 * */ 
- | interface_defs_template
- ;
-
-policy_types
- : 'policy_types' ':' NEWLINE
-	 ( INDENT
-	     policy_type+
-	   DEDENT )?
- ;
-
-policy_type
- : id ':' NEWLINE
-     INDENT
-     { let u = new UnorderedClauses(this); u.label = $id.text; }
-	    ( policy_type_clause {u.add($policy_type_clause.ctx)})+
-	 DEDENT
-	 { u.check(); }	 
- ;
-
-policy_type_clause
- : entity_clause
- | properties
- | 'targets' ':' '[' value (',' value)* ']' NEWLINE
- | 'targets' ':' NEWLINE
-	INDENT
-	  ( '-' INDENT value NEWLINE DEDENT )+
-	DEDENT
- | trigger_defs
- ;
-
-policy_defs
- : 'policies' ':' NEWLINE
-	 ( INDENT
-		policy_def+
-	 DEDENT)?
- ;
-
-policy_def
- : '-' INDENT id ':' NEWLINE
-	     INDENT
-         { let u = new UnorderedClauses(this); 
-           u.label = $id.text; u.setMandatory( [ 'type' ]) }
-	        ( policy_def_clause {u.add($policy_def_clause.ctx)})+
-	     DEDENT
-	     { u.check(); }
-	   DEDENT
- ;
- 
-policy_def_clause
- : 'type' ':' idtype NEWLINE
- | descr
- | entity_metadata
- | property_assignments
- | 'targets' ':' '[' id (',' id)* ']' NEWLINE 
- | 'targets' ':' NEWLINE 
-	 INDENT
-	   ( '-' INDENT id NEWLINE DEDENT )+
-	 DEDENT /* id=type de noeud ou de groupe */ 
- | trigger_defs
- ;
-		
-trigger_defs
- : 'triggers' ':' NEWLINE
-	 INDENT
-		trigger_def+
-	 DEDENT
- ;
-
-trigger_def
- : id ':' NEWLINE
-	 INDENT
-     { let u = new UnorderedClauses(this); u.label = $id.text; }
-	   ( trigger_def_clause {u.add($trigger_def_clause.ctx)} )+
-	 DEDENT
-	 { u.check(); }	 
- ;
-
-trigger_def_clause
- : descr
- | 'event' ':' id NEWLINE
- | 'event' ':' NEWLINE
-     INDENT
-     	'type' ':' idtype NEWLINE
-     DEDENT
- | 'schedule' ':' value // time interval ??
- | 'target_filter' ':' NEWLINE
-     INDENT
-     { let u = new UnorderedClauses(this); }
-       (target_filter_clause {u.add($target_filter_clause.ctx)} )+
-     DEDENT
-	 { u.check(); }	 
- | 'condition' ':' constraint_clause NEWLINE 
- | 'condition' ':' NEWLINE 
-     INDENT
-       'constraint' ':' constraint_clause NEWLINE
-	 DEDENT
- | 'period' ':' value NEWLINE // scalar-unit.time 
- | 'evaluations' ':' integer NEWLINE
- | 'method' ':' id NEWLINE
- | 'action' ':' id NEWLINE
- | 'action' ':' NEWLINE
-	 INDENT
-	   operation_def
-	 DEDENT
- ;
-
-target_filter_clause
- : 'node' ':' id NEWLINE
- | 'requirement' ':' id NEWLINE
- | 'capability' ':' id NEWLINE
- ; 
-
-node_filter
- : 'node_filter' ':' NEWLINE
-     ( INDENT
-     { let u = new UnorderedClauses(this); }
-	   (node_filter_clause {u.add($node_filter_clause.ctx)} )+     
-     DEDENT
-	 { u.check(); })?	 
- ;
-
-node_filter_clause
- : properties_filter
- | capabilities_filter
- ;
-
-properties_filter
- : 'properties' ':' NEWLINE
-     ( INDENT
-	   ( property_filter )+
-	   DEDENT )?
- ;
-
-property_filter
- : '-' INDENT id ':' '{' constraint_clause '}' NEWLINE DEDENT
- | '-' INDENT id ':' NEWLINE
-         INDENT
-           ( property_filter_clause )+
-         DEDENT
-       DEDENT
- | '-' INDENT value NEWLINE? DEDENT
- ;
-
-property_filter_clause
- : '-' INDENT '{' constraint_clause '}' NEWLINE DEDENT
- | '-' INDENT value NEWLINE? DEDENT
- ;
- 
-capabilities_filter
- : 'capabilities' ':' NEWLINE
-	  ( INDENT
-	    capability_filter+
-	  DEDENT )?
- ;
-
-capability_filter
- : '-' INDENT id ':' NEWLINE
-	     INDENT
-	       properties_filter
-	     DEDENT
-	   DEDENT
- ; 
- 
-declarative_node_workflows
- : 'workflows' ':' NEWLINE
-	( INDENT
-		declarative_node_workflow+
-	DEDENT)?
- ;
-
-declarative_node_workflow
- : id ':' NEWLINE
-	 INDENT
-     { let u = new UnorderedClauses(this); u.label = $id.text; }
-	   ( declarative_node_workflow_clause 
-	     {u.add($declarative_node_workflow_clause.ctx)} )+
-	 DEDENT
-	 { u.check(); }	 
- ;
-
-declarative_node_workflow_clause
- : descr
- | entity_metadata
- | inputs
- | workflow_preconditions
- | workflow_steps
- ;
-
-declarative_rel_workflows
- : 'workflows' ':' NEWLINE
-	( INDENT
-		declarative_rel_workflow+
-	DEDENT)?
- ;
-
-declarative_rel_workflow
- : id ':' NEWLINE
-     INDENT
-     { let u = new UnorderedClauses(this); u.label = $id.text; }
-	   ( declarative_rel_workflow_clause 
-	     {u.add($declarative_rel_workflow_clause.ctx)} )+
-	 DEDENT
-	 { u.check(); }	 
- ;
-
-declarative_rel_workflow_clause
- : descr
- | entity_metadata
- | inputs
- | workflow_preconditions
- | workflow_source_weavings
- | workflow_target_weavings
- ;
-
-workflow_source_weavings
- : 'source_weaving' ':' NEWLINE
-	 INDENT
-		workflow_source_weaving+
-	 DEDENT 
- ;
- 
-workflow_target_weavings
- : 'target_weaving' ':' NEWLINE
-	 ( INDENT
-		workflow_target_weaving +
-	 DEDENT) ?
- ;
- 
-workflow_source_weaving
- : '-' INDENT
-     { let u = new UnorderedClauses(this); }
-         (workflow_source_weaving_clause 
-          {u.add($workflow_source_weaving_clause.ctx)})+
-     DEDENT
-	 { u.check(); }	 
- ;
- 
-workflow_source_weaving_clause
- : ('after'|'before') ':' workflow_state NEWLINE
- | ('wait_target'|'after_target') ':' id NEWLINE
- | 'activity' ':' id NEWLINE
- ;
-
-workflow_target_weaving
- : '-' INDENT
-     { let u = new UnorderedClauses(this); }
-         (workflow_target_weaving_clause 
-          {u.add($workflow_target_weaving_clause.ctx)})+
-       DEDENT
-	 { u.check(); }	 
- ;
-
-workflow_target_weaving_clause
- : ('after'|'before') ':' workflow_state NEWLINE
- | ('wait_source'|'after_source') ':' id NEWLINE
- | 'activity' ':' id NEWLINE
- ;
-
-workflow_preconditions
- : 'preconditions' ':' NEWLINE
-	 (INDENT
-		workflow_precondition+
-	 DEDENT)? 
- ;
-
-workflow_precondition
- : '-' INDENT
-     { let u = new UnorderedClauses(this); }
-         (workflow_precondition_clause 
-          {u.add($workflow_precondition_clause.ctx)})+
-       DEDENT
-	 { u.check(); }	 
- ;
-
-workflow_precondition_clause
- : 'target' ':' id NEWLINE /* node template or group name */
- | 'target_relationship' ':' id NEWLINE /* name of a requirement of the target */
- | workflow_condition_clauses
- ;
-
-workflow_condition_clauses
- : 'condition' ':' NEWLINE
-  	 (INDENT
-  	   workflow_condition_clause+
-  	 DEDENT)?
-;
-
-workflow_filter_clauses
- : 'filter' ':' NEWLINE
-  	 (INDENT
-  	   workflow_condition_clause+
-  	 DEDENT)?
-;
-
-workflow_condition_clause
- : workflow_condition_or_clause
- | workflow_condition_and_clause
- | workflow_condition_assert_clause
- ;
- 
-workflow_condition_or_clause
- : '-' INDENT 'or' ':' NEWLINE
-         INDENT
-           workflow_condition_clause+
-         DEDENT
-       DEDENT
- ;
-
-workflow_condition_and_clause
- : '-' INDENT 'and' ':' NEWLINE
-         INDENT
-           workflow_condition_clause+
-         DEDENT
-       DEDENT
- ;
-
-workflow_condition_assert_clause
- : '-' INDENT 'assert' ':' '[' workflow_assertion (',' workflow_assertion)* ']' NEWLINE DEDENT
- | '-' INDENT 'assert' ':' NEWLINE
-         INDENT
-           workflow_assertion+
-         DEDENT
-       DEDENT
- ;
-
-workflow_assertion
- : '-' INDENT id ':' '[' '{' constraint_clause '}' (',' '{' constraint_clause '}')* ']' NEWLINE DEDENT
- | '-' INDENT id ':' NEWLINE
-		INDENT
-		  ('-' INDENT '{' constraint_clause '}' NEWLINE DEDENT)+
-		DEDENT
-    DEDENT
- ;
-
-workflow_steps
- : 'steps' ':' NEWLINE
-	 (INDENT
-	   workflow_step+
-	 DEDENT)?
- ;
-
-workflow_step
- : id ':' NEWLINE
-    (INDENT
-      workflow_step_clause+
-    DEDENT)?
- ;
- 
-workflow_step_clause
- : 'target' ':' id NEWLINE /* node template or group name */
- | 'target_relationship' ':' id NEWLINE /* name of a requirement of the target */
- | workflow_filter_clauses
- | workflow_activities
- | 'operation_host' ':' id  NEWLINE
- | 'on_success' ':' id  NEWLINE 
- | 'on_success' ':' '[' id (',' id)* ']' NEWLINE 
- | 'on_success' ':' NEWLINE
-     (INDENT
-	   ('-' INDENT id NEWLINE DEDENT )+
-     DEDENT)?
- | 'on_failure' ':' id NEWLINE
- | 'on_failure' ':' '[' id (',' id)* ']' NEWLINE
- | 'on_failure' ':' NEWLINE
-     (INDENT
-	   ('-' INDENT id NEWLINE DEDENT)+
-     DEDENT)?
- ;
-
-workflow_activities
- : 'activities' ':' '[' NEWLINE? workflow_activity (',' NEWLINE? workflow_activity )* NEWLINE? ']' NEWLINE 
- | 'activities' ':' NEWLINE 
-  	(INDENT
-  		('-' INDENT workflow_activity NEWLINE DEDENT)+
-  	DEDENT)?
- ;
-
-workflow_activity
- : 'delegate' ':' id
- | 'set_state' ':' workflow_state
- | 'call_operation' ':' id
- | 'inline' ':' id
- ; 
-
-imperative_workflows
- : 'workflows' ':' NEWLINE
-	 (INDENT
-		imperative_workflow+
-	 DEDENT)?
- ;
-
-imperative_workflow
- : id ':' NEWLINE
-     (INDENT
-       (imperative_workflow_clause )+
-     DEDENT)?
- ;
-
-imperative_workflow_clause
- : descr
- | entity_metadata
- | inputs
- | workflow_preconditions
- | workflow_steps
- ;
-
-workflow_state
- : id
-//       { [ 'initial', 'creating', 'created', 'configuring', 'configured',
-//             'starting', 'started', 'stopping', 'stopped', 'deleting', 'deleted',
-//             'error' ].includes($id.text) }? 
-             // 'stopped' et 'available' plus presents en 1.2
- ;
-
-value_expr
- : '{' func_expr '}' 
- ;
-
-func_expr
- : func_concat 
- | func_token 
- | func_join
- | func_get_input 
- | func_get_property 
- | func_get_attribute 
- | func_get_operation_output 
- | func_get_nodes_of_types 
- | func_get_artifact 
- ;
-
-func_arg
- : value_expr
- | short_str 
- ;
-
- 
-func_concat
- : 'concat' ':' 
-     '[' func_arg (',' func_arg)+ ']' 
- ;
-
-func_join
- : 'join' ':' 
- 	 '[' ('[' short_str (',' short_str)+ ']') | func_arg (',' short_str)? ']' 
- ;
-
-func_token
- : 'token' ':' 
-     '[' func_arg ',' short_str ',' integer ']'
- ;
-
-func_get_input
- : 'get_input' ':' 
-     id
- ;
-
-func_get_property
- : 'get_property' ':' 
-     '[' (('SELF' | 'HOST' | 'SOURCE' | 'TARGET') | id) ',' 
-         id (',' (id|integer))+ ']'
- ;
-
-func_get_attribute
- : 'get_attribute' ':' 
-     '[' (('SELF' | 'HOST' | 'SOURCE' | 'TARGER') | id) ',' 
-      	 id (',' (id|integer))+ ']'
- ;
-
-func_get_operation_output
- : 'get_operation_output' ':' 
-     '[' (('SELF' | 'HOST' | 'SOURCE' | 'TARGET') | id) ',' 
-	     id ',' id ',' id ']';
-
-func_get_nodes_of_types
- : 'get_nodes_of_types' ':' 
-     id
- ;
-
-func_get_artifact
- : 'get_artifact' ':' 
-     '[' (('SELF' | 'HOST' | 'SOURCE' | 'TARGET') | id) ',' 
-	     id (',' (short_str | 'local_file'))? (',' bool)? ']'
- ;
-
-
 value
  : comparable_value
+ | dsl_ref
+ | dsl_def
  | null_value
  | nan
  | list 
  | map
- | range
+// | range
  | bool
  | short_str
  ; 
@@ -1854,70 +154,86 @@ comparable_value
  | time
  | freq
  | infinity
+ | unbounded
  | number
  | timestamp
  | version
  ; 
- 
- 
+  
+dsl_def
+ : '&' id WS? NEWLINE
+    INDENT value WS? NEWLINE? DEDENT
+ ;
+
+dsl_ref
+ : '*' id WS? NEWLINE?
+ ;
+
 list
- : '[' NEWLINE? value (',' NEWLINE? value)* NEWLINE? ']'
- | '[' NEWLINE? ']'
- | ('-' INDENT value NEWLINE? DEDENT)+
- | NEWLINE INDENT
-      ('-' INDENT value NEWLINE? DEDENT)+
-   DEDENT
+ : '[' NEWLINE? WS? (value WS? ',' WS? NEWLINE?)* value WS? NEWLINE? ']'       # jsonList
+ | '[' WS? NEWLINE? ']'                                                     # emptyList
+ | ('-' INDENT value WS? NEWLINE? DEDENT)+                                  # itemList
+ | NEWLINE INDENT                                                       
+   WS?    ('-' INDENT value WS? NEWLINE? DEDENT)+
+   DEDENT                                                                   # indentList
  ;
 
 map
- : '{' NEWLINE? (value_assoc ',' NEWLINE?)+ value_assoc NEWLINE? '}'  
- | '{' NEWLINE? '}' 
- | ( value_assoc NEWLINE? )+
- | NEWLINE INDENT
-     ( value_assoc NEWLINE? )+
-   DEDENT
+ : '{' WS? NEWLINE? WS? (value_assoc WS? ',' WS? NEWLINE?)* value_assoc WS? NEWLINE? '}'     # jsonMap
+ | '{' WS? NEWLINE? WS? '}'                                                 # emptyMap
+ | ( value_assoc WS? NEWLINE? )+                                        # itemMap
+ | NEWLINE INDENT                                                       
+     ( value_assoc WS? NEWLINE? )+
+   DEDENT                                                               # indentMap
  ;
 
 value_assoc
- : id ':' value 
- | id ':' NEWLINE
+ : id ':' WS? value WS? 
+ | id ':' WS? NEWLINE
    INDENT
-     value NEWLINE?
+     value WS? NEWLINE?
    DEDENT
  ;
 
+ range
+  : list 
+  ;
+/*
 range
- : '[' size ',' size ']'
- | '[' time ',' time ']'
- | '[' freq ',' freq ']'
- | '[' ( number | infinity) ',' ( number | infinity) ']'
- | '[' timestamp ',' timestamp ']'
- | '[' version ',' version ']'
- | '[' UNBOUNDED ',' UNBOUNDED ']'
- | '[' comparable_value ',' UNBOUNDED ']'
- | '[' UNBOUNDED ',' comparable_value ']'
+ : '[' WS? size WS? ',' WS? size WS?']'
+ | '[' WS? time WS? ',' WS? time WS? ']'
+ | '[' WS? freq WS? ',' WS? freq WS? ']'
+ | '[' WS? number WS? ',' WS? number WS? ']'
+ | '[' WS? number WS? ',' WS? infinity WS? ']'
+ | '[' WS? infinity WS? ',' WS? infinity WS? ']'
+ | '[' WS? infinity WS? ',' WS? number WS? ']'
+ | '[' WS? timestamp WS? ',' WS? timestamp WS? ']'
+ | '[' WS? version WS? ',' WS? version WS? ']'
+ | '[' WS? unbounded WS? ',' WS? unbounded WS? ']'
+ | '[' WS? comparable_value WS? ',' WS? unbounded WS? ']'
+ | '[' WS? unbounded WS? ',' WS? comparable_value WS? ']'
  ;
-
+*/
 short_str
- : STRING_LITERAL
- | alltokens+
+ : STRING_LITERAL WS?            # strLiteral
+ | (alltokens WS?)+                    # strAlltokens
  ;
  
 str
- : short_str
- | MLPREF alltokens* NEWLINE 
+ : MLPREF WS*  NEWLINE    
        (INDENT 
            sub_mlstring+
-       DEDENT)? 
+       DEDENT)?                  # strMulti
+ | short_str                     # strSimple
  ;
 
 sub_mlstring
- : alltokens* NEWLINE
- | INDENT sub_mlstring+ DEDENT
+ : (alltokens WS?)* NEWLINE      # strSubAllTokens
+ | INDENT sub_mlstring+ DEDENT   # strSubMulti
  ;
  
 number
- : integer
+ : integer/
  | real
  ;
  
@@ -1929,7 +245,7 @@ version
 real
  : INT_DOT_INT
  | FLOAT_NUMBER
- | '0'
+ | ZERO
  | INFINITY
  | NAN
  | integer
@@ -1952,6 +268,10 @@ infinity
  : INFINITY
  ;
 
+unbounded
+ : UNBOUNDED
+ ;
+
 timestamp
  : TIMESTAMP
  ;
@@ -1961,7 +281,7 @@ integer
  | OCT_INTEGER
  | HEX_INTEGER
  | BIN_INTEGER
- | '0'
+ | ZERO
  | INFINITY
  | NAN
  ;
@@ -1980,178 +300,25 @@ freq
 
 id
  : ID
- | 'token'
- | 'type'
- | 'version'
- | 'type'
- | 'target'
- | 'url'
  ;
- 
-idtype
- : ID
- | basetype_names
+
+tab
+ : TABULATION { console.log( 'TAB tab' )}
  ;
- 
-idval
- : ID
- | not_key_tokens
- | key_tokens
- | basetype_names
- ;
- 
+
+  
 alltokens
- : allkeywords 
- | basetype_names
- | values_tokens
- | symbol_names
- ;
-
-allkeywords
- : key_tokens
- | not_key_tokens
- ;
-
-key_tokens
- : ACTION
- | ACTIVITY           
- | ACTIVITIES
- | AFTER_SOURCE
- | AFTER_TARGET
- | AND
- | ARTIFACT_TYPES
- | ARTIFACTS
- | ATTRIBUTES
- | CALL_OPERATION
- | CAPABILITY
- | CAPABILITIES
- | CAPABILITY_TYPES
- | CONCAT
- | CONSTRAINT                
- | CONSTRAINTS
- | COPY
- | DATA_TYPES
- | DEFAULT
- | DELEGATE
- | DEPENDENCIES
- | DESCRIPTION
- | DERIVED_FROM
- | DIRECTIVES
- | ENTRY_SCHEMA
- | EQUAL
- | EVALUATIONS
- | GET_ARTIFACT
- | GET_ATTRIBUTE
- | GET_INPUT
- | GET_NODES_OF_TYPES
- | GET_OPERATION_OUTPUT
- | GET_PROPERTY
- | GREATER_THAN
- | GREATER_OR_EQUAL
- | GROUP_TYPES
- | GROUPS
- | IMPLEMENTATION
- | IMPORTS
- | IN_RANGE
- | INTERFACE_TYPES
- | INTERFACES
- | INPUTS
- | JOIN
- | LENGTH
- | LESS_OR_EQUAL
- | LESS_THAN
- | METADATA
- | MAX_LENGTH
- | MIN_LENGTH
- | NAMESPACE
- | NAMESPACE_PREFIX
- | NAMESPACE_URI
- | NODE
- | NODE_FILTER
- | NODE_TEMPLATES
- | NODE_TYPES
- | OCCURRENCES
- | ON_SUCCESS
- | ON_FAILURE
- | OPERATION_HOST
- | OR
- | PATTERN
- | POLICY_TYPES
- | POLICIES
- | PRIMARY
- | PROPERTIES
- | RELATIONSHIP_TEMPLATES
- | RELATIONSHIP_TYPES
- | RELATIONSHIP
- | REPOSITORY
- | REQUIRED
- | REQUIREMENTS
- | REPOSITORIES
- | SET_STATE
- | SOURCE_WEAVING
- | SUBSTITUTION_MAPPING
- | TARGET_FILTER
- | TARGET_RELATIONSHIP
- | TARGET_WEAVING
- | TARGETS
- | TEMPLATE_AUTHOR
- | TEMPLATE_NAME
- | TEMPLATE_VERSION
- | TOPOLOGY_TYPES
- | TOSCA_DEFINITIONS_VERSION
- | TRIGGERS
- | VALID_VALUES
- | VALID_SOURCE_TYPES
- | VALID_TARGET_TYPES
- | WAIT_SOURCE
- | WAIT_TARGET
- | WORKFLOWS
+ : value_tokens
+ | symbols
  ;
  
-not_key_tokens
- : AFTER
- | ASSERT
- | CONDITION
- | BEFORE
-// | CREDENTIAL
- | DEPLOY_PATH
- | EVENT
- | FILE
- | FILE_EXT
- | FILTER
- | INLINE
- | MAPPING
- | MEMBERS
- | METHOD
- | MIME_TYPE
- | PERIOD
- | PRECONDITIONS
-// | PROTOCOL
- | SCHEDULE
- | SCHEMA
- | STATUS
- | STEPS
- | TARGET
- | TOKEN
-// | TOKEN_TYPE
- | TYPE
- | URL
-// | USER
- | VALUE 
- ; 
- 
-values_tokens
- : SCALAR_SIZE
+value_tokens
+ : ID
+ | SCALAR_SIZE
  | SCALAR_TIME
  | SCALAR_FREQ
- | K_SELF
- | K_HOST
- | K_SOURCE
- | K_TARGET
- | LOCAL_FILE
  | TRUE
  | FALSE
- | ID
  | STRING_LITERAL
  | FLOAT_NUMBER
  | INT_DOT_INT
@@ -2159,213 +326,37 @@ values_tokens
  | OCT_INTEGER
  | HEX_INTEGER
  | BIN_INTEGER
+ | ZERO
  | NAN
  | URI
  | TIMESTAMP
  | VERSION
+ | NAN
+ | NULL
+ | INFINITY
  ;
 
-symbol_names
- : STAR
- | OPEN_PAREN
- | CLOSE_PAREN
+symbols
+ : MLPREF
  | COMMA
  | COLON 
- | SEMI_COLON
- | POWER
- | ASSIGN
  | OPEN_BRACK
  | CLOSE_BRACK
- | XOR
- | LEFT_SHIFT
- | RIGHT_SHIFT
- | ADD
  | MINUS
- | DIV
- | MOD
- | IDIV
  | OPEN_BRACE
  | CLOSE_BRACE
+ | ANCHOR
+ | REF
  | UNKNOWN_CHAR
- | INFINITY
- | DOT
- | MLPREF
  ;
-
-basetype_names
- : STRING
- | BOOLEAN
- | LIST
- | MAP
- | RANGE
- | INTEGER
- | FLOAT
- | SCALAR_UNIT_SIZE
-// | LSIZE
- | SCALAR_UNIT_TIME
-// | LTIME
- | SCALAR_UNIT_FREQUENCY
-// | LFREQUENCY
- | LVERSION
- | UNBOUNDED
- | NULL
- ;
-
-
  
 /*
  * lexer rules
  */
 
-/* basetypes */
-STRING: 'string';
-BOOLEAN: 'boolean';
-LIST: 'list';
-MAP: 'map';
-RANGE: 'range';
-INTEGER: 'integer';
-FLOAT: 'float';
-SCALAR_UNIT_SIZE: 'scalar-unit.size';
-//LSIZE: 'size';
-SCALAR_UNIT_TIME: 'scalar-unit.time';
-//LTIME: 'time';
-SCALAR_UNIT_FREQUENCY: 'scalar-unit.frequency';
-//LFREQUENCY: 'frequency';
-
-/* keywords */
-ACTION: 'action';
-ACTIVITY: 'activity';
-ACTIVITIES: 'activities';
-AFTER: 'after';                                          
-AFTER_SOURCE: 'after_source';
-AFTER_TARGET: 'after_target';
-AND : 'and';
-ARTIFACT_TYPES: 'artifact_types';
-ARTIFACTS: 'artifacts';
-ASSERT : 'assert';
-ATTRIBUTES: 'attributes';
-BEFORE: 'before';
-CALL_OPERATION: 'call_operation';
-CAPABILITIES: 'capabilities';
-CAPABILITY: 'capability';
-CAPABILITY_TYPES: 'capability_types';
-CONCAT: 'concat';
-COPY: 'copy';
-//CREDENTIAL: 'credential';
-CONDITION: 'condition';
-CONSTRAINT: 'constraint';
-CONSTRAINTS: 'constraints';
-DATA_TYPES: 'data_types';
-DEFAULT: 'default';
-DELEGATE: 'delegate';
-DEPENDENCIES: 'dependencies';
-DEPLOY_PATH: 'deploy_path';
-DERIVED_FROM: 'derived_from';
-DESCRIPTION: 'description';
-DIRECTIVES: 'directives';
-ENTRY_SCHEMA: 'entry_schema';
-EQUAL: 'equal';
-EVALUATIONS: 'evaluations';
-EVENT: 'event';
-FILE: 'file';
-FILE_EXT: 'file_ext';
-FILTER: 'filter';
-GET_ARTIFACT: 'get_artifact';
-GET_ATTRIBUTE: 'get_attribute';
-GET_INPUT: 'get_input';
-GET_NODES_OF_TYPES: 'get_nodes_of_types';
-GET_OPERATION_OUTPUT: 'get_operation_output';
-GET_PROPERTY: 'get_property';
-GREATER_THAN: 'greater_than';
-GREATER_OR_EQUAL: 'greater_or_equal';
-GROUP_TYPES: 'group_types';
-GROUPS: 'groups';
-IMPLEMENTATION: 'implementation';
-IMPORTS: 'imports';
-IN_RANGE: 'in_range';
-INLINE: 'inline';
-INPUTS: 'inputs';
-INTERFACE_TYPES: 'interface_types';
-INTERFACES: 'interfaces';
-JOIN: 'join';
-LENGTH: 'length';
-LESS_OR_EQUAL: 'less_or_equal';
-LESS_THAN: 'less_than';
-MAPPING: 'mapping';
-MAX_LENGTH: 'max_length';
-MEMBERS: 'members';
-METADATA: 'metadata';
-METHOD: 'method';
-MIME_TYPE: 'mime_type';
-MIN_LENGTH: 'min_length';
-NAMESPACE: 'namespace';
-NAMESPACE_PREFIX: 'namespace_prefix';
-NAMESPACE_URI: 'namespace_uri';
-NODE: 'node';
-NODE_FILTER: 'node_filter';
-NODE_TEMPLATES: 'node_templates';
-NODE_TYPES: 'node_types';
-OCCURRENCES: 'occurrences';
-ON_SUCCESS: 'on_success';
-ON_FAILURE: 'on_failure';
-OPERATION_HOST: 'operation_host';
-OR : 'or';
-PATTERN: 'pattern';
-PERIOD: 'period';
-POLICY_TYPES: 'policy_types';
-POLICIES: 'policies';
-PRIMARY: 'primary';
-PRECONDITIONS: 'precondditions';
-PROPERTIES: 'properties';
-// PROTOCOL: 'protocol';
-RELATIONSHIP: 'relationship';
-RELATIONSHIP_TEMPLATES: 'relationship_templates';
-RELATIONSHIP_TYPES: 'relationship_types';
-REQUIREMENTS: 'requirements';
-REPOSITORIES: 'repositories';
-REPOSITORY: 'repository';
-REQUIRED: 'required';
-SCHEMA: 'schema';
-SCHEDULE: 'schedule';
-SET_STATE: 'set_state';
-SOURCE_WEAVING: 'source_weaving';
-STATUS: 'status';
-STEPS: 'steps';
-SUBSTITUTION_MAPPING: 'substitution_mappings';
-TARGET: 'target';
-TARGET_FILTER: 'target_filter';
-TARGET_RELATIONSHIP: 'target_relationship';
-TARGET_WEAVING: 'target_weaving';
-TARGETS: 'targets';
-TEMPLATE_AUTHOR: 'template_author';
-TEMPLATE_NAME: 'template_name';
-TEMPLATE_VERSION: 'template_version';
-TOKEN: 'token';
-// TOKEN_TYPE: 'token_type';
-TOPOLOGY_TYPES: 'topology_template';
-TOSCA_DEFINITIONS_VERSION: 'tosca_definitions_version';
-TRIGGERS: 'triggers';
-TYPE: 'type';
-URL: 'url';
-// USER: 'user';
-VALID_SOURCE_TYPES: 'valid_source_types';
-VALID_TARGET_TYPES: 'valid_target_types';
-VALID_VALUES: 'valid_values';
-VALUE: 'value';
-LVERSION: 'version';
-WAIT_SOURCE: 'wait_source';
-WAIT_TARGET: 'wait_target';
-WORKFLOWS: 'workflows';
-
-
-
-K_SELF: 'SELF';
-K_HOST: 'HOST';
-K_SOURCE: 'SOURCE';
-K_TARGET: 'TARGET';
-
-LOCAL_FILE: 'LOCAL_FILE';
-
+TABULATION
+ : TAB { console.log("TAB"); }
+ ;
 
 TRUE : 'True'|'true'|'TRUE';
 FALSE : 'False'|'false'|'FALSE';
@@ -2428,19 +419,19 @@ LITEM
  ;
 
 SCALAR_SIZE 
- : (INT_DOT_INT | FLOAT_NUMBER | '0' | DECIMAL_INTEGER) 
+ : (INT_DOT_INT | FLOAT_NUMBER | ZERO | DECIMAL_INTEGER) 
    SPACES* 
    ([Bb]|[kK][Bb]|[Kk][iI][Bb]|[Mm][Bb]|[Mm][iI][Bb]|[Gg][Bb]|[Gg][iI][Bb]|[Tt][Bb]|[Tt][iI][Bb])
  ;
 
 SCALAR_TIME 
- : (INT_DOT_INT | FLOAT_NUMBER | '0' | DECIMAL_INTEGER) 
+ : (INT_DOT_INT | FLOAT_NUMBER | ZERO | DECIMAL_INTEGER) 
    SPACES* 
-   ([dD]|[hH]|[mM]|[s]|[mM][sS]|[uU][sS]|[nN][sS])
+   ([dD]|[hH]|[mM]|[sS]|[mM][sS]|[uU][sS]|[nN][sS])
  ;
 
 SCALAR_FREQ
- : (INT_DOT_INT | FLOAT_NUMBER | '0' | DECIMAL_INTEGER) 
+ : (INT_DOT_INT | FLOAT_NUMBER | ZERO | DECIMAL_INTEGER) 
    SPACES* 
    ([Hh][zZ]|[kK][Hh][zZ]|[Mm][Hh][zZ]|[Gg][Hh][zZ])
  ;  
@@ -2460,7 +451,7 @@ INFINITY
  ;
 
 VERSION
- : INT_DOT_INT '.' DECIMAL_INTEGER ('.' ID ('-'DECIMAL_INTEGER)?)?
+ : INT_DOT_INT '.' DIGIT+ ('.' ID ('-'DIGIT+)?)?
  ;
 
 FLOAT_NUMBER
@@ -2476,52 +467,38 @@ INT_DOT_INT
 
 DECIMAL_INTEGER
  : [+-]? NON_ZERO_DIGIT DIGIT*
- | '0'+
+ | ZERO+
  ;
 
 /// octinteger     ::=  "0" ("o" | "O") octdigit+
 OCT_INTEGER
- : [+-]? '0' [oO] OCT_DIGIT+
+ : [+-]? ZERO [oO] OCT_DIGIT+
  ;
 
 /// hexinteger     ::=  "0" ("x" | "X") hexdigit+
 HEX_INTEGER
- : [+-]? '0' [xX] HEX_DIGIT+
+ : [+-]? ZERO [xX] HEX_DIGIT+
  ;
 
 /// bininteger     ::=  "0" ("b" | "B") bindigit+
 BIN_INTEGER
- : [+-]? '0' [bB] BIN_DIGIT+
+ : [+-]? ZERO [bB] BIN_DIGIT+
  ;
 
+ANCHOR: '&';
+REF: '*';
 MLPREF: [|>][+-]?;
-DOT : '.';
-ELLIPSIS : '...';
-STAR : '*';
-OPEN_PAREN : '(' {this.opened++;};
-CLOSE_PAREN : ')' {this.opened--;};
 COMMA : ',';
 COLON : ':';
-SEMI_COLON : ';';
-POWER : '**';
-ASSIGN : '=';
 OPEN_BRACK : '[' {this.opened++;};
 CLOSE_BRACK : ']' {this.opened--;};
-XOR : '^';
-LEFT_SHIFT : '<<';
-RIGHT_SHIFT : '>>';
-ADD : '+';
 MINUS : '-';
-DIV : '/';
-MOD : '%';
-IDIV : '//';
 OPEN_BRACE : '{' {this.opened++;};
 CLOSE_BRACE : '}' {this.opened--;};
 
-IGNORER
- : ( SPACES | COMMENT | LINE_JOINING ) -> skip
- ;
- 
+IGNORE
+ : ( COMMENT | LINE_JOINING ) -> skip
+ ; 
  
 UNBOUNDED
  : 'UNBOUNDED'
@@ -2531,27 +508,34 @@ NULL
  : 'null'|'NULL'|'Null'|'~'
  ;
  
- 
 TIMESTAMP
  : DIGIT DIGIT DIGIT DIGIT '-' DIGIT DIGIT? '-' DIGIT DIGIT?
    (([tT]| SPACES+) DIGIT DIGIT? ':' DIGIT DIGIT ':' DIGIT DIGIT ('.' DIGIT+)?
    ( SPACES* ('Z' | ([+-] DIGIT DIGIT?(':' DIGIT DIGIT)?)?)))?
  ; 
 
-
 URI
  : SCHEME '://' ( URI_STR ':' URI_STR '@')? (URI_STR | IP) (':' DIGIT (DIGIT (DIGIT DIGIT?)?)?)? ('/' (URI_STR ('/' URI_STR)*'/'?)?)?
  ; 
 
+ZERO
+ : '0'
+ ;
 
 ID
  : ID_START ID_CONTINUE*
  ;
+
+WS
+ : SPACES
+ ;
+
                                                  
 UNKNOWN_CHAR
  : .
  ;
- 
+
+
 /*
  * fragments
  */
@@ -2560,7 +544,7 @@ fragment SCHEME
  : 'http'|'https'|'file'
  ;
  
-fragment SHORT_STRING
+fragment SHORT_STRING 
  : '\'' ( STRING_ESCAPE_SEQ | ~[\\'] )* '\''
  | '"' ( STRING_ESCAPE_SEQ | ~[\\"] )* '"'
  ;
@@ -2613,8 +597,12 @@ fragment EXPONENT
  : [eE] [+-]? DIGIT+
  ;
 
+fragment TAB
+ : '\t'+
+ ; 
+
 fragment SPACES
- : [ \t]+
+ : ' '+
  ;
 
 fragment COMMENT
@@ -2967,7 +955,7 @@ fragment ID_START
 /// id_continue  ::=  <all characters in id_start, plus characters in the categories Mn, Mc, Nd, Pc and others with the Other_ID_Continue property>
 fragment ID_CONTINUE
  : ID_START
- | DOT
+ | '.'
  | MINUS
  | [0-9]
  | [\u0300-\u036F]

@@ -1,10 +1,13 @@
 # ToP
 ToP stands for *Tosca Parser* and aims to be a fully compliant Tosca OASIS normative parser 
 (cf [TOSCA Simple Profile in YAML Version 1.2](http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.2/TOSCA-Simple-Profile-YAML-v1.2.pdf)).
-All features defined in the TOSCA 1.2 standard are implemented with the exception of *'dsl_definitions'*.
 
 Currently, ToP is limited to syntax validation.
 It is based on an ANTLR 4 grammar. The parser is built using the JavaSCript target.
+V0.1 and V.02 are based on an ANTLR 4 grammar. The parser is built using the JavaSCript target.
+- ToP V0.1 provides a fully TOSCA 1.2 grammar expressed in ANTLR V4. The counterpart is more than 150 keywords which can not be used as ids...
+- ToP V0.2 splits TOSCA 1.2 grammar into two parts : a derivative YAML grammar expressed in ANTLR V4 and a TOSCA part expressed using json schemas. 
+This make the parser more efficient and allows to drastically reduce the number of keywords not to be used as ids.
 
 ## Prerequisites
 You need to install :
@@ -22,10 +25,8 @@ You need to install :
 <pre>jasmine</pre>
 
 ## Tests
-Tests are implemented with *jasmine* and are located in the *spec* directory.
-Normative types (1.0 and 1.2) come from the dedicated [normative_types](https://github.com/ditrit/normative_types) ditrit project.
-
-The tests (a little over 400) cover the entire grammar as defined in the standard and all the examples provided in the latter.
+Tests are implemented with *jasmine* and are located in the *tests* directory. 
+Normative types (1.0 and 1.2) definitions come from the dedicated [normative_types](https://github.com/ditrit/normative_types) ditrit project.
 
 ## Caution
 ToP is currently only a syntax validator and has not been tested in production. 
