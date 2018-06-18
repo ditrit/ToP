@@ -6,8 +6,7 @@ Currently, ToP is limited to syntax validation.
 It is based on an ANTLR 4 grammar. The parser is built using the JavaSCript target.
 V0.1 and V.02 are based on an ANTLR 4 grammar. The parser is built using the JavaSCript target.
 - ToP V0.1 provides a fully TOSCA 1.2 grammar expressed in ANTLR V4. The counterpart is more than 150 keywords which can not be used as ids...
-- ToP V0.2 splits TOSCA 1.2 grammar into two parts : a derivative YAML grammar expressed in ANTLR V4 and a TOSCA part expressed using json schemas. 
-This make the parser more efficient and allows to drastically reduce the number of keywords not to be used as ids.
+- ToP V0.2 splits TOSCA 1.2 grammar into two parts : a derivative YAML grammar expressed in ANTLR V4 and a TOSCA part expressed using json schemas. It allows to manage with the same parser different TOSCA dialects (TOSCA 1.0 and 1.2 provided). It makes also the parser more efficient and solves the problem of the number of keywords.
 
 ## Prerequisites
 You need to install :
