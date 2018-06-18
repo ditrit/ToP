@@ -1,9 +1,9 @@
-# ToPar
-ToPar stands for *Tosca Parser* and aims to be a fully compliant Tosca OASIS normative parser 
+# ToP
+ToP stands for *Tosca Parser* and aims to be a fully compliant Tosca OASIS normative parser 
 (cf [TOSCA Simple Profile in YAML Version 1.2](http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.2/TOSCA-Simple-Profile-YAML-v1.2.pdf)).
 All features defined in the TOSCA 1.2 standard are implemented with the exception of *'dsl_definitions'*.
 
-Currently, ToPar is limited to syntax validation.
+Currently, ToP is limited to syntax validation.
 It is based on an ANTLR 4 grammar. The parser is built using the JavaSCript target.
 
 ## Prerequisites
@@ -28,4 +28,4 @@ Normative types (1.0 and 1.2) definitions come from the dedicated [normative_typ
 The tests for syntax verification (a little over 400) cover the entire grammar as defined in the standard and all the examples provided in the latter.
 
 ## Caution
-ToPar is currently only a syntax validator and has not been tested in production. 
+ToP is currently only a syntax validator and has not been tested in production. 
