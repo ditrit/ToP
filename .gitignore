@@ -9,5 +9,5 @@ ToscaLexer*
 ToscaParser*
 ToscaListener*
 Tosca.*
-package.json
 a.js
+package-lock.json

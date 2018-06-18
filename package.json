@@ -1,0 +1,32 @@
+{
+  "name": "top",
+  "version": "0.3.0",
+  "description": "Tosca Parser",
+  "main": "ToP.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "jasmine"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ditrit/ToP.git"
+  },
+  "keywords": [
+    "TOSCA",
+    "Parser"
+  ],
+  "author": "Xavier TALON",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/ditrit/ToP/issues"
+  },
+  "homepage": "https://github.com/ditrit/ToP#readme",
+  "dependencies": {
+    "ajv": "^6.5.1",
+    "ajv-keywords": "^3.2.0",
+    "json-pointer": "^0.6.0",
+    "yaml-js": "^0.2.3"
+  }
+}
