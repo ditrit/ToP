@@ -28,13 +28,13 @@ Dependencies :
 
 [jasmine for node.js](https://jasmine.github.io/2.0/node.html) is used to automate tests.
 
-## Build and use the parser
-1. Compile the grammar to produce the JavaScript parser :
-<pre>antlr4 -Dlanguage=JavaScript Tosca.g4</pre>
-2. Use the CLI to parse a tosca yaml file :
-<pre>node cli.js service_template.yaml</pre>
-3. Execute tests
-<pre>jasmine</pre>
+## Use the parser
+<pre>
+app = require('./topar.js');
+
+# parse a tosca service_template file
+let l1 = app.parse_file("tosca_definitions/tosca_simple_yaml_1_2/nodes.yaml")
+</pre>
 
 ## Tests
 Tests are implemented with *jasmine* and are located in the *tests* directory. 
