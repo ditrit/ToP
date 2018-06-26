@@ -1,0 +1,51 @@
+{
+  "capability_types": {
+    "$id": "http://ditrit.io/schemas/capability_types",
+    "dictIdsDefinition": {
+      "dictProperties": {
+        "derived_from": { "instanceofyaml": "str" },
+        "version":      { "instanceofyaml": [ "str", "float" ] },
+        "metadata":     { "$ref": "metadata" },
+        "description":  { "$ref": "description" },
+        "properties":   { "$ref": "properties" },
+        "attributes":   { "$ref": "attributes" },
+        "valid_source_types": {
+          "listItems": { "instanceofyaml": "str" }
+        }
+      }
+    }
+  },
+
+  "capability_defs": {
+    "$id": "http://ditrit.io/schemas/capability_defs",
+    "dictIdsDefinition": {
+      "anyOf": [
+        { "dictProperties": {
+            "type": { "instanceofyaml": "str" },
+            "description":  { "$ref": "description" },
+            "properties":   { "$ref": "properties" },
+            "attributes":   { "$ref": "attributes" },
+            "valid_source_types": {
+              "listItems": { "instanceofyaml": "str" }
+            },
+            "occurrences":  { "instanceof": "Sequence" }
+          }
+        },
+        { "instanceofyaml": "str"}
+      ]
+    }
+  },
+
+  "capability_asignments": {
+    "$id": "http://ditrit.io/schemas/capability_assignments",
+    "dictIdsDefinition": {
+      "dictProperties": {
+        "properties": { "$ref": "property_assignments" },
+        "attributes": { "$ref": "attribute_assignments" }
+      }
+    }
+  }
+
+
+
+}

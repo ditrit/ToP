@@ -1,0 +1,70 @@
+{
+  "trigger_defs": {
+    "$id": "http://ditrit.io/schemas/trigger_defs",
+    "dictIdsDefinition": {
+      "dictProperties": {
+        "description":   { "$ref": "description" },
+        "event": {
+          "anyOf": [
+            { "instanceofyaml": "str" },
+            { "dictProperties": { "type": { "instanceofyaml": "str"} } }
+          ]
+        },
+        "schedule":      { "instanceof": "Value" },
+        "target_filter": {
+          "dictProperties": {
+            "node":        { "instanceofyaml": "str"},
+            "requirement": { "instanceofyaml": "str"},
+            "capability":  { "instanceofyaml": "str"}
+          }
+        },
+        "condition":     {
+          "anyOf": [
+            { "$ref": "constraint" },
+            { "dictProperties": { "constraint": { "$ref": "constraint" } } }
+          ]
+        },
+        "period":        { "instanceofyaml": "str"  },
+        "evaluations":   { "instanceofyaml": "int" },
+        "method":        { "instanceofyaml": "str"},
+        "action": {
+          "anyOf": [
+            { "instanceofyaml": "str"},
+            { "$ref": "operation_def" }
+          ]
+        }
+      }
+    }
+  },
+
+  "policy_types": {
+    "$id": "http://ditrit.io/schemas/policy_types",
+    "dictIdsDefinition": {
+      "dictProperties": {
+        "derived_from":       { "instanceofyaml": "str" },
+        "version":            { "instanceofyaml": [ "float", "str" ] },
+        "metadata":           { "$ref": "metadata" },
+        "description":        { "$ref": "description" },
+        "properties":         { "$ref": "properties" },
+        "targets":            { "listItems": { "instanceofyaml": "str" } },
+        "triggers":           { "$ref": "trigger_defs"}
+      }
+    }
+  },
+
+  "policy_defs": {
+    "$id": "http://ditrit.io/schemas/policy_defs",
+    "listItems": {
+      "idDefinition": {
+        "dictProperties": { 
+          "type":             { "instanceofyaml": "str" },
+          "description":      { "$ref": "description" },
+          "properties":       { "$ref": "property_assignments" },
+          "targets":          { "listItems": { "instanceofyaml": "str" } },
+          "triggers":         { "$ref": "trigger_defs"}
+        }
+      }
+    }
+  }
+
+}

@@ -1,0 +1,59 @@
+{
+
+  "value_expression": {
+  	"$id": "http://ditrit.io/schemas/value_expression",
+  	"dictMinProperties": 1,
+  	"dictMaxProperties": 1,
+  	"dictProperties": {
+  	  "concat": {
+  	  	"listItems": { 
+  	  	  "anyOf": [ { "instanceofyaml": "str"}, { "$ref": "value_expression" } ]
+  	  	}
+  	  },
+  	  "get_input": { "instanceofyaml": "str"},
+  	  "get_nodes_of_types": { "instanceofyaml": "str"},
+      "token": {
+        "listMinItems": 3,
+        "listMaxItems": 3,
+        "listItems": { 
+          "list": [ 
+            { "anyOf": [ { "instanceofyaml": "str"}, { "$ref": "value_expression" }] },
+            { "instanceofyaml": "str"},
+            { "instanceofyaml": "int"} 
+          ] }
+      },
+      "join": {
+        "listMaxItems": 2,
+        "listItems": {
+          "list": [ 
+            { "anyOf": [
+                { "$ref": "value_expression" },
+                { "listItems": { "anyOf": [ { "instanceofyaml": "str"}, { "$ref": "value_expression" } ] } }
+              ]},
+            { "instanceofyaml": "str"} ]
+        }
+      },
+      "get_property": {
+        "listMinItems": 2,
+        "listItems": { "list": [ { "instanceofyaml": "str"}, { "instanceofyaml": "str"} ] },
+        "listAdditionalItems": { "anyOf": [ { "instanceofyaml": "str"}, { "instanceofyaml": "int"} ] }
+      },
+      "get_attribute": {
+        "listMinItems": 2,
+        "listItems": { "list": [ { "instanceofyaml": "str"}, { "instanceofyaml": "str"} ] },
+        "listAdditionalItems": { "anyOf": [ { "instanceofyaml": "str"}, { "instanceofyaml": "int"} ] }
+      },
+      "get_operation_output": {
+        "listMinItems": 4,
+        "listMaxItems": 4,
+        "listItems": { "list": [ { "instanceofyalm": "str"}, { "instanceofyaml": "str"}, { "instanceofyaml": "str"}, { "instanceofyaml": "str"} ] }
+      },
+      "get_artifact": {
+        "listMinItems": 2,
+        "listMaxItems": 4,
+        "listItems": { "list": [ { "instanceofyaml": "str"}, { "instanceofyaml": "str"}, { "instanceofyaml": "str"} ] },
+        "listAdditionalItems": { "instanceofyaml": "bool"}
+      }
+    }
+  }
+}

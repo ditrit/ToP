@@ -211,8 +211,8 @@ node_types:
         default: 0 MB
         constraints:
           - greater_or_equal: 0 MB
-    capabilities:
-      # TBD
+    #capabilities:
+      
   
   #section: 5.9.10 tosca.nodes.Storage.ObjectStorage
   tosca.nodes.Storage.ObjectStorage:
@@ -281,6 +281,9 @@ node_types:
           capability: tosca.capabilities.Endpoint
           relationship: tosca.relationships.RoutesTo
           occurrences: [0, UNBOUNDED] 
-          description: Connection to one or more load balanced applications
+          description: >
+            Connection to one or more 
+               load balanced 
+              applications
   
   

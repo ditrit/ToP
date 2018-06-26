@@ -1,82 +1,43 @@
-const antlr4 = require("antlr4/index")
 const fs = require("fs")
-const ToscaLexer = require("./ToscaLexer.js")
-const ToscaParser = require("./ToscaParser.js")
-const ToscaAstBuilder = require("./ToscaAstBuilder.js").ToscaAstBuilder
-const ToscaSchemas = require("./ToscaSchema.js");
+const yaml = require('yaml-js')
 const pointer = require('json-pointer');
+const ToscaSchemas = require("./ToscaSchema.js");
 
-
-const syntax=0
-const phase={syntax: 0, ast: 1}
-const tosca_versions = require("./normative_types/versions.json");
+const tosca_definitions = 'tosca_definitions';  
 
 //var _ = require('lodash');
 
 exports=module.exports={};
 
-ToscaErrors = function(annotations) {
-  this.annotations = annotations;
-}
-
-ToscaErrors.prototype.constructor = ToscaErrors;
-
-// class for gathering errors 
-var AnnotatingErrorListener = function(annotations, filename) {
-    antlr4.error.ErrorListener.call(this);
-    this.annotations = annotations;
-    this.filename
-
-    return this;
-};
-
-AnnotatingErrorListener.prototype = Object.create(antlr4.error.ErrorListener.prototype);
-AnnotatingErrorListener.prototype.constructor = AnnotatingErrorListener;
-
-AnnotatingErrorListener.prototype.syntaxError = function(recognizer, offendingSymbol, line, column, msg, e) {
-    this.annotations.push({
-        filename: this.filename,
-        row: line,
-        column: column,
-        text: msg,
-        type: "error"
- });
-};
-
-function parse_file(filename, rule_name='tosca_input', step=phase.ast) {
-  let input = fs.readFileSync(filename, 'UTF-8');
-  return parse(input, rule_name, step, filename);
-}
-
 function load_schemas() {
   let schemas = {}
-  const normative_types_dir= `normative_types`;  
-  versions = [ ... new Set(Object.values(JSON.parse(fs.readFileSync(normative_types_dir + '/versions.json')))) ] 
+  versions = fs.readdirSync(tosca_definitions);
   for (let version of versions) {
       schemas[version] = {};
-      const schema_dir = `normative_types/${version}/schemas`;
+      const schema_dir = `${tosca_definitions}/${version}/schemas`;
       let files;
       try {
         files = fs.readdirSync(schema_dir);
       } catch(e) {
-        console.error(`Le répertoire ${schema_dir} n'existe pas ou ne peut être ouvert`);
-        return;
+        console.error(`Warning : No schemas found for '${version}'`);
+        continue;
       }
       for (let schema_file of files) {
-        try {
-          schema = JSON.parse(fs.readFileSync(`${schema_dir}/${schema_file}`, 'UTF-8'));
-        } catch(e) {
-          console.error(`Le fichier ${schema_dir}/${schema_file} ne contient pas un schema valide :`);
-          console.error(e);
-          return;
-        }
-        try {
-          for (let name in schema) {
-            //console.log("schema name : " + name)
-            schemas[version][name] = ToscaSchemas.ajv.compile(schema[name]);
-          };
-        } catch(e) {
-          console.error(e)
+        if (schema_file.endsWith(".json")) {
+          try {
+            schema = JSON.parse(fs.readFileSync(`${schema_dir}/${schema_file}`, 'UTF-8'));
+          } catch(e) {
+              console.error(`Error: '${schema_dir}/${schema_file}' does not contain a valid JSON :`);
+              console.error(e);
+            return;
+          }
+          try {
+            for (let name in schema) {
+              schemas[version][name] = ToscaSchemas.ajv.compile(schema[name]);
+            };
+          } catch(e) {
+              console.error(e);
+          }
         }
       } 
   }
@@ -85,132 +46,86 @@ function load_schemas() {
 
 const _schemas = load_schemas();
 
-AnnotatingErrorListener.prototype.syntaxError = function(recognizer, offendingSymbol, line, column, msg, e) {
-    this.annotations.push({
-        filename: this.filename,
-        row: line,
-        column: column,
-        text: msg,
-        type: "error"
- });
-};
 
-function simpleError(message, ast) {
-  return { 
-    filename: ast.ast_ctx.filename.split('/').pop(),
-    message:  message,
-    type:     "error"
-  }
-}
-
-function getErrors(schema_errors, ast) {
-  let annotations = [];
-  for (let error of schema_errors) {
-    let data = pointer.get(ast, error.dataPath)
-    if (data && data.ast_ctx) {
-      let txt = data.ast_ctx.rule_ctx.getText()
-      let content = (txt.length < 80) ? `"${txt}"` : `"${txt.trim().slice(0, 38)}...${txt.trim().slice(-38)}"`
-      annotations.push( {
-        keyword:    error.keyword,
-        schema:     JSON.stringify(error.schema),
-        filename:   data.ast_ctx.filename.split('/').pop(),
-        row:        data.ast_ctx.start_row,
-        column:     data.ast_ctx.start_col,
-        end_row:    data.ast_ctx.end_row,
-        end_column: data.ast_ctx.end_col,
-        type:       "error",
-        content:    content 
-      });
+function adaptVals(ast) {
+  if (ast instanceof yaml.nodes.MappingNode) {
+    ast.val = {}
+    for (let assoc of ast.value) {
+      let [k,v] = assoc
+      ast.val[k.value] = adaptVals(v)
     }
-  }
-  return annotations;
-}
-
-function parse_files(filename) {
-  ast = parse_file(filename);
-  if (ast instanceof ToscaErrors) {
-    console.log(ast.annotations)
-    return ast;
-  };
-  if (ast instanceof Dict) {
-    let annotations = {};
-    tosca_version = ast.get("tosca_definitions_version");
-    if (! tosca_version) {
-      ast = new ToscaErrors(simpleError("Error : no tosca_definitions_version found", ast));
-    } else {
-      const sch = _schemas[tosca_version];
-      let valid = sch.service_template(ast);
-      if (!valid) {
-        ast = new ToscaErrors(getErrors(sch.service_template.errors, ast));
-      }
-    };
-  } else {
-    ast = new ToscaErrors(simpleError("Error : this file does not seems to be a Tosca yaml", ast));
-  };
-  if (ast instanceof ToscaErrors) {
-    console.log(ast.annotations)
-  };
+  } else if (ast instanceof yaml.nodes.SequenceNode) {
+    ast.val = ast.value.map(x => adaptVals(x))
+  } else ast.val = ast.value
   return ast
 }
 
-function parse(input, rule_name='tosca_input', step=phase.ast, filename=null) {
 
-  var chars = new antlr4.InputStream(input);
-  var lexer = new ToscaLexer.ToscaLexer(chars);
-  var tokens  = new antlr4.CommonTokenStream(lexer);
-  var parser = new ToscaParser.ToscaParser(tokens);
-  var ast = null;
-
-  parser.buildParseTrees = true;
-  
-  var annotations = [];
-  var listener = new AnnotatingErrorListener(annotations, filename);
-  parser.removeErrorListeners();
-  parser.addErrorListener(listener);
-  
-  if (step >= phase.syntax) {
-    var tree = parser[rule_name]();
+function buildYamlAst(input, filename) {
+  let yamled
+  try {
+    yamled = yaml.compose(input);
+  } catch(e) {
+    let start =  (e.context_mark) ? `${e.context_mark.line + 1}:${e.context_mark.column + 1}` : ''
+    let end =    (e.problem_mark) ? `${e.problem_mark.line + 1}:${e.problem_mark.column + 1}` : ''
+    let buffer = (e.problem_mark) ? `${e.problem_mark.buffer}` : (e.context_mark) ? `${e.context_mark.buffer}` : ''
+    let data = (e.context_mark && e.problem_mark) ? buffer.substring(e.context_mark.pointer, e.problem_mark.pointer) : buffer
+    let errorMsg = `Yaml syntax error: ${e.context}, ${e.problem} (${filename}:${start}->${end} = "${data}")`  
+    console.error(errorMsg)
+    return false
   }
+  let ast = adaptVals(yamled);
+  return ast;
+}
 
-  if (annotations.length > 0) {
-      return new ToscaErrors(annotations);
-  };
-  
-  if (step >= phase.ast) {
-    var extractor = new ToscaAstBuilder(annotations, filename);
-    antlr4.tree.ParseTreeWalker.DEFAULT.walk(extractor, tree);
-    ast = extractor.last;
+function validateToscaSyntax(ast, schema, version, filename) {
+  let tosca_version = (version) ? version : "tosca_simple_yaml_1_2"
+  let tosca_schema  = (schema)  ? schema  : "service_template"
+  schema = _schemas[tosca_version][tosca_schema]
+  valid = schema(ast)
+  if (!valid) {
+    for (let error of schema.errors) {
+      let dpath  = error.dataPath;
+      srcPath = (dpath.endsWith('/val')) ? dpath.substring(0,dpath.lastIndexOf('/')) : dpath
+      let data = pointer.get(ast, srcPath)
+      let start =  (data.start_mark) ? `${data.start_mark.line + 1}:${data.start_mark.column + 1}` : ''
+      let end =    (data.end_mark) ? `${data.end_mark.line + 1}:${data.end_mark.column + 1}` : ''
+      let buffer = (data.end_mark) ? `${data.end_mark.buffer}` : (data.start_mark) ? `${data.start_mark.buffer}` : ''
+      let txt = (data.start_mark && data.end_mark) ? buffer.substring(data.start_mark.pointer, data.end_mark.pointer) : buffer
+      dataTxt = (txt.length < 300) ? `"${txt}"` : `"${txt.trim().slice(0, 146)}  [ ... ] ${txt.trim().slice(-146)}"`
+      let keywordMsg = error.message
+      switch(error.keyword) {
+        case "additionalProperties":
+          keywordMsg = `${error.message}, keyword '${error.params.additionalProperty}' is not allowed`
+          break;
+        case "dictProperties":
+          keywordMsg = `error in TOSCA definition`
+          break;
+        case "dictIdsDefinition":
+          keywordMsg = `should be a map of well formed named TOSCA definitions`
+          break;
+      }
+      let errorMsg = `\nTosca syntax error: ${keywordMsg}, \n  ${filename}:${start}->${end}, \n  ${dataTxt})`
+      console.error(errorMsg)
+    }
   }
+  return valid
+}
 
-  if (annotations.length > 0) {
-      return new ToscaErrors(annotations);
-  } else {
-      return ast;
-  }
+function parse_file(filename, schema=null, version=null) {
+  let input = fs.readFileSync(filename, 'UTF-8');
+  return parse(input,  filename, schema, version);
+}
+
+function parse_string(input, schema=null, version=null) {
+  let input = fs.readFileSync(filename, 'UTF-8');
+  return parse(input, null, schema, version);
+}
+
+function parse(input, filename, schema, version) {
+  let ast   = buildYamlAst(input, filename);
+  let valid = validateToscaSyntax(ast, schema, version, filename)
 };
 
-function parse_file_syntax(filename, rule_name='tosca_input') {
-  return parse_file(filename, rule_name, phase.syntax)
-}
-
-function parse_syntax(input, rule_name='tosca_input', fiename=null) {
-  return parse(input, rule_name, phase.syntax)
-}
-
-function parse_file_ast(filename, rule_name='tosca_input') {
-  return parse_file(filename, rule_name, phase.ast)
-}
-
-function parse_ast(input, rule_name='tosca_input', filename=null) {
-  return parse(input, rule_name, phase.ast)
-}
-
-exports.ToscaErrors=ToscaErrors
-exports.parse_syntax=parse_syntax
-exports.parse_file_syntax=parse_file_syntax
-exports.parse_ast=parse_ast
-exports.parse_file_ast=parse_file_ast
-exports.parse=parse
 exports.parse_file=parse_file
-exports.parse_files= parse_files
-exports.load_schemas = load_schemas
+exports.parse_string=parse_string

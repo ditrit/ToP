@@ -1,55 +1,40 @@
 
-var values=require("./ToscaValues.js"); 
 const Ajv = require("ajv");
-
-var ajv = new Ajv({allErrors: false, jsonPointers: true, verbose: true});
-var ajvk = require('ajv-keywords')(ajv,'instanceof');
+const ajv = new Ajv({allErrors: false, jsonPointers: true, verbose: true});
+const ajvk = require('ajv-keywords')(ajv,'instanceof');
 //require('ajv-errors')(ajv /*, {singleError: true} */);
-
 var instanceofDef = require('ajv-keywords').get('instanceof').definition;
 
-instanceofDef.CONSTRUCTORS.Value = values.AstEntity;
-instanceofDef.CONSTRUCTORS.ComparableValue = values.ComparableValue;
-instanceofDef.CONSTRUCTORS.Dict = values.Dict;
-instanceofDef.CONSTRUCTORS.List = values.List;
-instanceofDef.CONSTRUCTORS.ScalarUnit = values.ScalarUnit;
-instanceofDef.CONSTRUCTORS.ScalarUnitSize = values.ScalarUnitSize;
-instanceofDef.CONSTRUCTORS.ScalarUnitTime = values.ScalarUnitTime;
-instanceofDef.CONSTRUCTORS.ScalarUnitFreq = values.ScalarUnitFreq;
-instanceofDef.CONSTRUCTORS.Timestamp = values.Timestamp;
-instanceofDef.CONSTRUCTORS.Num = values.Num;
-instanceofDef.CONSTRUCTORS.Int = values.Int;
-instanceofDef.CONSTRUCTORS.Real = values.Real;
-instanceofDef.CONSTRUCTORS.Bool = values.Bool;
-instanceofDef.CONSTRUCTORS.Inf = values.Inf;
-instanceofDef.CONSTRUCTORS.Unbounded = values.Unbounded;
-instanceofDef.CONSTRUCTORS.NaNumber = values.NaNumber;
-instanceofDef.CONSTRUCTORS.NullValue = values.NullValue;
-instanceofDef.CONSTRUCTORS.Str = values.Str;
-instanceofDef.CONSTRUCTORS.Range = values.Range;
-instanceofDef.CONSTRUCTORS.Version = values.Version;
+const yaml = require('yaml-js')
 
-ajv.addKeyword('dictOf', {
+
+instanceofDef.CONSTRUCTORS.Value = yaml.nodes.Node;
+instanceofDef.CONSTRUCTORS.Scalar = yaml.nodes.ScalarNode;
+instanceofDef.CONSTRUCTORS.Sequence = yaml.nodes.SequenceNode;
+instanceofDef.CONSTRUCTORS.Mapping = yaml.nodes.MappingNode;
+
+
+ajv.addKeyword('instanceofyaml', {
   type: 'object',
-  compile: function (sch) {
-      return function(data) {
-        return (data instanceof Dict) && (data.isDictOf(sch))	
+  macro: function (sch) {
+    return {
+      "instanceof": "Scalar",
+      "properties": {
+        "tag": { "pattern": (sch instanceof Array) ? sch.join('|') : sch }
       }
-  },
-  metaSchema: {
-    type: 'string'
+    }
   }
-});
+})
 
 ajv.addKeyword('dictRequired', {
   type: 'object',
   macro: function (sch) {
     return {
-      "instanceof": "Dict",
+      "instanceof": "Mapping",
       "properties": {
-         "value": {
-            "required": sch
-	 }
+        "val": {
+          "required": sch
+	      }
       }
     }
   },
@@ -63,9 +48,9 @@ ajv.addKeyword('dictPatternRequired', {
   type: 'object',
   macro: function (sch) {
     return {
-      "instanceof": "Dict",
+      "instanceof": "Mapping",
       "properties": {
-         "value": {
+         "val": {
             "patternRequired": sch
    }
       }
@@ -81,9 +66,9 @@ ajv.addKeyword('dictMinProperties', {
   type: 'object',
   macro: function (sch) {
     return {
-      "instanceof": "Dict",
+      "instanceof": "Mapping",
       "properties": {
-         "value": {
+         "val": {
             "minProperties": sch
    }
       }
@@ -98,9 +83,9 @@ ajv.addKeyword('dictMaxProperties', {
   type: 'object',
   macro: function (sch) {
     return {
-      "instanceof": "Dict",
+      "instanceof": "Mapping",
       "properties": {
-         "value": {
+         "val": {
             "maxProperties": sch
    }
       }
@@ -116,9 +101,9 @@ ajv.addKeyword('dictProperties', {
   macro: function (sch, parentSchema) {
 
     newSchema = {
-      "instanceof": "Dict",
+      "instanceof": "Mapping",
       "properties": {
-        "value": {
+        "val": {
           "type": "object",
           "properties": sch,
           "additionalProperties":
@@ -145,9 +130,9 @@ ajv.addKeyword('dictIdsDefinition', {
   macro: function (sch, parentSchema) {
 
     newSchema = {
-      "instanceof": "Dict",
+      "instanceof": "Mapping",
       "properties": {
-        "value": {
+        "val": {
           "type": "object",
           "patternProperties": { ".*": sch }
         }
@@ -166,9 +151,9 @@ ajv.addKeyword('idDefinition', {
   macro: function (sch, parentSchema) {
 
     newSchema = {
-      "instanceof": "Dict",
+      "instanceof": "Mapping",
       "properties": {
-        "value": {
+        "val": {
           "type": "object",
           "minProperties": 1,
           "maxProperties": 1,
@@ -191,9 +176,9 @@ ajv.addKeyword('listItems', {
   macro: function (sch, parentSchema) {
 
     newSchema = {
-      "instanceof": "List",
+      "instanceof": "Sequence",
       "properties": {
-        "value": {
+        "val": {
           "type": "array",
           "items": (sch.list) ? sch.list : sch,
           "additionalItems":
@@ -219,9 +204,9 @@ ajv.addKeyword('listMinItems', {
   type: 'object',
   macro: function (sch) {
     return {
-      "instanceof": "List",
+      "instanceof": "Sequence",
       "properties": {
-         "value": {
+         "val": {
             "minItems": sch
    }
       }
@@ -236,9 +221,9 @@ ajv.addKeyword('listMaxItems', {
   type: 'object',
   macro: function (sch) {
     return {
-      "instanceof": "List",
+      "instanceof": "Sequence",
       "properties": {
-         "value": {
+         "val": {
             "maxItems": sch
    }
       }
@@ -246,19 +231,6 @@ ajv.addKeyword('listMaxItems', {
   },
   metaSchema: {
     type: 'number',
-  }
-});
-
-ajv.addKeyword('listOf', {
-  type: 'object',
-  compile: function (sch) {
-      return function(data) {
-        return (data instanceof List) && (data.isListOf(sch)) 
-      }
-  },
-  errors: false,
-  metaSchema: {
-    type: 'string'
   }
 });
 

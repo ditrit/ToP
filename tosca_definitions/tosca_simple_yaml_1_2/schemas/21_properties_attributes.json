@@ -1,0 +1,111 @@
+{
+  "constraint": {
+    "$id": "http://ditrit.io/schemas/constraint",
+    "dictMinProperties": 1,
+    "dictMaxProperties": 1,
+    "dictProperties": { 
+      "equal":            { "instanceof": "Value" },
+      "greater_than":     { "instanceof": "Value" },
+      "greater_or_equal": { "instanceof": "Value" },
+      "less_than":        { "instanceof": "Value" },
+      "less_or_equal":    { "instanceof": "Value" },
+      "in_range":         { "instanceof": "Sequence" },
+      "valid_values":     { "instanceof": "Sequence" },
+      "length":           { "instanceofyaml": "int" },
+      "min_length":       { "instanceofyaml": "int" }, 
+      "max_length":       { "instanceofyaml": "int" },
+      "pattern":          { "instanceofyaml": "str" },
+      "schema":           { "instanceofyaml": "str" } 
+    }
+  },
+
+  "constraints": {
+    "$id": "http://ditrit.io/schemas/constraints",
+    "listItems": { "$ref": "constraint" }
+  },
+
+  "entry_schema": {
+    "$id": "http://ditrit.io/schemas/entry_schema",
+    "oneOf": [
+      { "instanceofyaml": "str"},
+      { "dictRequired": [ "type" ],
+        "dictProperties": {
+          "type":         { "instanceofyaml": "str"},
+          "description":  { "$ref": "description" },
+          "constraints":  { "$ref": "constraints" },
+          "entry_schema": { "$ref": "entry_schema" }
+        }
+      }
+    ]
+  },
+
+  "properties": {
+    "$id": "http://ditrit.io/schemas/properties",
+    "dictIdsDefinition": {
+      "dictRequired": [ "type" ],
+      "dictProperties": {
+        "type":         { "instanceofyaml": "str" },
+        "description":  { "$ref": "description" }, 
+        "constraints":  { "$ref": "constraints" },
+        "required":     { "instanceofyaml": "bool" },
+        "default":      { "instanceof": "Value" },
+        "status":       {
+          "properties": {
+            "val": { 
+              "enum": ["supported", "unsupported", "experimental", "deprecated"]
+            }
+          }
+        },
+        "metadata":     { "$ref": "metadata" },
+        "entry_schema": { "$ref": "entry_schema" } 
+      }
+    }
+  },
+
+  "property_asignments": {
+    "$id": "http://ditrit.io/schemas/property_assignments",
+    "dictIdsDefinition": {
+      "anyOf": [
+        { "instanceof": "Value" },
+        { "$ref": "value_expression"},
+        { "dictRequired": [ "value" ], 
+          "dictProperties": {
+            "description": { "$ref": "description" },
+            "value": { "anyOf": [ { "$ref": "value_expression"}, { "instanceof": "Value" } ] }
+          }
+        }
+      ]
+    }
+  },
+
+  "attributes": {
+    "$id": "http://ditrit.io/schemas/attributes",
+    "dictIdsDefinition": {
+      "dictRequired": [ "type" ],
+      "dictProperties": {
+        "type":         { "instanceofyaml": "str" },
+        "description":  { "$ref": "description"   }, 
+        "default":      { "instanceof": "Value"   },
+        "status":       { "properties": { "val": { "enum": ["supported", "unsupported", "experimental", "deprecated"] }}},
+        "entry_schema": { "$ref": "entry_schema"  } 
+      }
+    }
+  },
+
+  "attribute_asignments": {
+    "$id": "http://ditrit.io/schemas/attribute_assignments",
+    "dictIdsDefinition": {
+      "anyOf": [
+        { "instanceof": "Value" },
+        { "$ref": "value_expression"},
+        { "dictRequired": [ "value" ], 
+          "dictProperties": {
+            "description": { "$ref": "description" },
+            "value": { "anyOf": [ { "instanceof": "Value" }, { "$ref": "value_expression"} ] }
+          }
+        }
+      ]
+    }
+  }
+
+}

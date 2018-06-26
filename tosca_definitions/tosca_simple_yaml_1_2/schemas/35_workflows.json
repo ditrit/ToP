@@ -1,0 +1,123 @@
+{
+  "workflow_condition_clause": {
+    "$id": "http://ditrit.io/schemas/workflow_condition_clause",
+    "listItems": {
+      "dictMinProperties": 1,
+      "dictMaxProperties": 1,      
+      "dictProperties": {
+        "or":     { "$ref": "workflow_condition_clause" },
+        "and":    { "$ref": "workflow_condition_clause" },
+        "assert": { 
+          "listItems": {
+            "idDefinition": { "$ref": "constraints" }
+          }
+        }
+      }
+    }
+  },
+
+  "workflow_preconditions": {
+    "$id": "http://ditrit.io/schemas/workflow_preconditions",
+    "listItems": {
+      "dictProperties": {
+        "target":              { "instanceofyaml": "str" },
+        "target_relationship": { "instanceofyaml": "str" },
+        "condition":           { "$ref": "workflow_condition_clause" }
+      }
+    }
+  },
+
+  "workflow_activities": {
+    "$id": "http://ditrit.io/schemas/workflow_activities",
+    "listItems": {
+      "dictProperties": {
+        "delegate":   { "instanceofyaml": "str" },
+        "set_state":  { "instanceofyaml": "str" },
+        "call_operation": { "instanceofyaml": "str" },
+        "inline": { "instanceofyaml": "str" }
+      }
+    }
+  },
+
+  "workflow_steps": {
+    "$id": "http://ditrit.io/schemas/workflow_steps",
+    "dictIdsDefinition": {    
+      "dictProperties": {
+        "target":              { "instanceofyaml": "str" },
+        "target_relationship": { "instanceofyaml": "str" },
+        "filter":              { "$ref": "workflow_condition_clause"},
+        "activities":          { "$ref": "workflow_activities" },
+        "operation_host":      { "instanceofyaml": "str"},
+        "on_success":          { 
+          "anyOf": [ { "instanceofyaml": "str"}, { "listItems": { "instanceofyaml": "str" } } ]
+        },
+        "on_failure":          { 
+          "anyOf": [ { "instanceofyaml": "str"}, { "listItems": { "instanceofyaml": "str" } } ]
+        }
+      }
+    }
+  },
+
+  "workflow_source_weaving": {
+    "$id": "http://ditrit.io/schemas/workflow_source_weaving",
+    "listItems": {
+      "after":        { "instanceofyaml": "str" },
+      "before":       { "instanceofyaml": "str" },
+      "wait_target":  { "instanceofyaml": "str" },
+      "after_target": { "instanceofyaml": "str" },
+      "activity":     { "instanceofyaml": "str"}
+    }
+  },
+
+  "workflow_target_weaving": {
+    "$id": "http://ditrit.io/schemas/workflow_target_weaving",
+    "listItems": {
+      "after":        { "instanceofyaml": "str" },
+      "before":       { "instanceofyaml": "str" },
+      "wait_source":  { "instanceofyaml": "str" },
+      "after_source": { "instanceofyaml": "str" },
+      "activity":     { "instanceofyaml": "str"}
+    }
+  },
+
+  "declarative_workflow_node_defs": {
+    "$id": "http://ditrit.io/schemas/declarative_workflow_node_defs",
+    "dictIdsDefinition": {    
+      "dictProperties": {
+        "description":   { "$ref": "description" },
+        "metadata":      { "$ref": "metadata" },
+        "inputs":        { "$ref": "properties" },
+        "preconditions": { "$ref": "workflow_preconditions" }, 
+        "steps":         { "$ref": "workflow_steps" }
+      }
+    }         
+  },
+
+  "declarative_workflow_rel_defs": {
+    "$id": "http://ditrit.io/schemas/declarative_workflow_rel_defs",
+    "dictIdsDefinition": {    
+      "dictProperties": {
+        "description":    { "$ref": "description" },
+        "metadata":       { "$ref": "metadata" },
+        "inputs":         { "$ref": "properties" },
+        "preconditions":  { "$ref": "workflow_preconditions" }, 
+        "source_weaving": { "$ref": "workflow_source_weaving" },         
+        "target_weaving": { "$ref": "workflow_target_weaving" }
+      }
+    }         
+  },
+
+  "imperative_workflow_defs": {
+    "$id": "http://ditrit.io/schemas/imperative_workflow_defs",
+    "dictIdsDefinition": {    
+      "dictProperties": {
+        "description":   { "$ref": "description" },
+        "metadata":      { "$ref": "metadata" },
+        "inputs":        { "$ref": "properties" },
+        "preconditions": { "$ref": "workflow_preconditions" }, 
+        "steps":         { "$ref": "workflow_steps" }
+      }
+    }         
+  }
+
+}

@@ -1,0 +1,108 @@
+{
+
+  "properties_mapping": {
+    "$id": "http://ditrit.io/schemas/properties_mapping",
+    "dictIdsDefinition": {
+      "anyOf": [
+        { "instanceof": "Value"},
+        { "$ref": "value_expression" },
+        { "listMaxItems": 3, "listItems": { "instanceofyaml": "str"} 
+        },
+        { "dictMinProperties": 1,
+          "dictMaxProperties": 1,
+          "dictProperties": {
+            "mapping": {
+              "anyOf": [
+                { "instanceofyaml": "str" },
+                { "listMaxItems": 3, "listItems": { "instanceofyaml": "str" } }
+              ]
+            },
+            "value": {
+              "anyOf": [
+                { "instanceof": "Value"},
+                { "$ref": "value_expression" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+
+  "attributes_mapping": {
+    "$id": "http://ditrit.io/schemas/attributes_mapping",
+    "dictIdsDefinition": {
+      "anyOf": [
+        { "instanceof": "Value"},
+        { "$ref": "value_expression" },
+        { "listMaxItems": 3, "listItems": { "instanceofyaml": "str"} },
+        { "dictMinProperties": 1,
+          "dictMaxProperties": 1,
+          "dictProperties": {
+            "mapping": {
+              "anyOf": [
+                { "instanceofyaml": "str" },
+                { "listMaxItems": 3, "listItems": { "instanceofyaml": "str" } }
+              ]
+            },
+            "value": {
+              "anyOf": [
+                { "instanceof": "Value"},
+                { "$ref": "value_expression" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+
+  "capabilities_mapping": {
+    "$id": "http://ditrit.io/schemas/capabilities_mapping",
+    "dictIdsDefinition": {
+      "anyOf": [
+        { "listMaxItems": 2, "listItems": { "instanceofyaml": "str"} },
+        { "dictProperties": {
+            "mapping": { "listMaxItems": 2, "listItems": { "instanceofyaml": "str" } },
+            "properties": { "$ref": "property_assignments"},
+            "attributes": { "$ref": "attribute_assignments"}          }
+        }
+      ]
+    }
+  },
+
+  "requirements_mapping": {
+    "$id": "http://ditrit.io/schemas/requirements_mapping",
+    "dictIdsDefinition": {
+      "anyOf": [
+        { "listMaxItems": 2, "listItems": { "instanceofyaml": "str"} },
+        { "dictProperties": {
+            "mapping": { "listMaxItems": 2, "listItems": { "instanceofyaml": "str" } },
+            "properties": { "$ref": "property_assignments"},
+            "attributes": { "$ref": "attribute_assignments"}          }
+        }
+      ]
+    }
+  },
+
+  "interfaces_mapping": {
+    "$id": "http://ditrit.io/schemas/interfaces_mapping",
+    "dictIdsDefinition": { 
+      "idDefinition": { "instanceofyaml": "str" }
+    }
+  },
+
+  "substitution_mappings": {
+    "$id": "http://ditrit.io/schemas/substitution_mappings",
+    "dictRequired": [ "node_type" ],
+    "dictProperties": { 
+      "node_type":        { "instanceofyaml": "str" },
+      "properties":       { "$ref": "properties_mapping" },
+      "capabilities":     { "$ref": "capabilities_mapping" },
+      "requirements":     { "$ref": "requirements_mapping" },
+      "attributes":       { "$ref": "attributes_mapping" },
+      "interfaces":       { "$ref": "interfaces_mapping" } 
+    }
+  }
+  
+}
