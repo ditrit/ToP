@@ -1,0 +1,20 @@
+{
+  "data_types": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/data_types",
+      "dictIdsDefinition": {
+        "dictProperties": {
+          "derived_from": { "instanceofyaml": "str" },
+          "version":      { "instanceofyaml": [ "str", "float" ] },
+          "metadata":     { "$ref": "metadata" },
+          "description":  { "$ref": "description" },
+          "properties":   { "$ref": "properties" },
+          "constraints":  { "$ref": "constraints" }
+        }
+      }
+    },
+    "ast": {
+      
+    }
+  }
+}

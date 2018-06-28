@@ -1,0 +1,49 @@
+{ 
+  "properties_filter": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/properties_filter",
+      "listItems": {
+        "anyOf": [
+          { "idDefinition": { "$ref": "constraint" } },
+          { "idDefinition": {
+              "listItems": { "anyOf": [ { "$ref": "constraint" }, { "instanceof": "Value" } ] }
+            }
+          },
+          { "instanceof": "Value" }
+        ]
+      }
+    },
+    "ast": {
+      
+    }
+  },
+  
+  "capabilities_filter": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/capabilities_filter",
+      "listItems": {
+        "idDefinition": { 
+          "dictProperties": {
+            "properties": { "$ref": "properties_filter" }
+          } 
+        } 
+      }
+    },
+    "ast": {
+      
+    }
+  },
+
+  "node_filter": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/node_filter",
+      "dictProperties": {
+      	"properties":   { "$ref": "properties_filter" },
+      	"capabilities": { "$ref": "capabilities_filter" }
+      }
+    },
+    "ast": {
+      
+    }
+  }
+}

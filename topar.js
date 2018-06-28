@@ -14,7 +14,7 @@ function load_schemas() {
   versions = fs.readdirSync(tosca_definitions);
   for (let version of versions) {
       schemas[version] = {};
-      const schema_dir = `${tosca_definitions}/${version}/schemas`;
+      const schema_dir = `${tosca_definitions}/${version}/definitions`;
       let files;
       try {
         files = fs.readdirSync(schema_dir);
@@ -33,7 +33,7 @@ function load_schemas() {
           }
           try {
             for (let name in schema) {
-              schemas[version][name] = ToscaSchemas.ajv.compile(schema[name]);
+              schemas[version][name] = ToscaSchemas.ajv.compile(schema[name].schema);
             };
           } catch(e) {
               console.error(e);

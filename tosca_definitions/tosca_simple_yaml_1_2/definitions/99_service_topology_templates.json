@@ -1,0 +1,49 @@
+{
+  "topology_template": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/topology_template",
+      "dictProperties": {
+         "description":               { "$ref": "description"},
+         "inputs":                    { "$ref": "input_parameters" },
+         "outputs":                   { "$ref": "output_parameters" },
+         "node_templates":            { "$ref": "node_templates" },
+         "relationship_templates":    { "$ref": "relationship_templates" },
+         "groups":                    { "$ref": "group_defs" },
+         "policies":                  { "$ref": "policy_defs" },
+         "substitution_mappings":     { "$ref": "substitution_mappings" },
+         "workflows":                 { "$ref": "imperative_workflow_defs" }
+      }
+    },
+    "ast": {
+      
+    }
+  },
+
+  "service_template": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/service_template",
+      "dictRequired": [ "tosca_definitions_version" ],
+      "dictProperties": {
+         "tosca_definitions_version": { "instanceofyaml": "str"},
+         "description":               { "$ref": "description"},
+         "namespace" :                { "$ref": "imports" },
+         "metadata" :                 { "$ref": "metadata"},
+         "repositories" :             { "$ref": "repositories"},
+         "imports" :                  { "$ref": "imports" },
+         "artifact_types" :           { "$ref": "artifact_types"},
+         "data_types" :               { "$ref": "data_types" },
+         "capability_types" :         { "$ref": "capability_types"},
+         "interface_types" :          { "$ref": "interface_types"},
+         "relationship_types" :       { "$ref": "relationship_types"},
+         "node_types" :               { "$ref": "node_types"},
+         "group_types" :              { "$ref": "group_types"},
+         "policy_types" :             { "$ref": "policy_types"},
+         "topology_template" :        { "$ref": "topology_template" }
+      }
+    },
+    "ast": {
+      
+    }
+  }
+
+}

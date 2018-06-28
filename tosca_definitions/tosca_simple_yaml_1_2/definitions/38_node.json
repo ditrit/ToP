@@ -1,0 +1,52 @@
+{ 
+  "node_types": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/node_types",
+      "dictIdsDefinition": {
+        "dictProperties": {
+          "derived_from": { "instanceofyaml": "str" },
+          "version":      { "instanceofyaml": [ "str", "float" ] },
+          "metadata":     { "$ref": "metadata" },
+          "description":  { "$ref": "description" },        
+          "properties":   { "$ref": "properties" },
+          "attributes":   { "$ref": "attributes" },
+          "capabilities": { "$ref": "capability_defs" },
+          "requirements": { "$ref": "requirement_defs" },
+          "interfaces":   { "$ref": "interface_defs" },
+          "artifacts":    { "$ref": "artifact_defs" },
+          "workflows":    { "$ref": "declarative_workflow_node_defs" }
+        }
+      }
+    },
+    "ast": {
+      
+    }
+  },
+
+  "node_templates": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/node_templates",
+      "dictIdsDefinition": {
+        "dictPatternRequired": [ "^type$|^copy$"],      
+        "dictProperties": {
+          "type":         { "instanceofyaml": "str" },
+          "metadata":     { "$ref": "metadata" },
+          "description":  { "$ref": "description" },        
+          "directives":   { "listItems": { "instanceofyaml": "str" } },
+          "properties":   { "$ref": "property_assignments" },
+          "attributes":   { "$ref": "attribute_assignments" },
+          "capabilities": { "$ref": "capability_assignments" },
+          "requirements": { "$ref": "requirement_assignments" },
+          "interfaces":   { "$ref": "interface_defs_template" },
+          "artifacts":    { "$ref": "artifact_defs" },
+          "node_filter":  { "$ref": "node_filter" },
+          "copy":         { "instanceofyaml": "str"}
+        }
+      }
+    },
+    "ast": {
+      
+    }
+  }
+
+}

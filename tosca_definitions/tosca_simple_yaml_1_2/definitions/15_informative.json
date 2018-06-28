@@ -1,0 +1,40 @@
+       
+{ 
+
+  "description": { 
+    "schema": {
+      "$id": "http://ditrit.io/schemas/description",
+      "instanceofyaml": "str"
+    },
+    "ast": {
+
+    }
+  },
+
+  "namespace": { 
+    "schema": {
+      "$id": "http://ditrit.io/schemas/namespace",
+      "instanceofyaml": "str"
+    },
+    "ast": {
+      
+    }
+  },
+
+  "metadata": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/metadata",
+      "dictProperties": {
+        "template_name":    { "instanceofyaml": "str" },
+        "template_author":  { "instanceofyaml": "str" },
+        "template_version": { "instanceofyaml": [ "float", "str" ] }
+      },
+      "dictAdditionalProperties": { "instanceofyaml": "str" }
+    },
+    "ast": {
+      
+    }
+
+  }
+
+}

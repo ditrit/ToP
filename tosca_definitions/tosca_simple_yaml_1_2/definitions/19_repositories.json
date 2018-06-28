@@ -1,0 +1,30 @@
+{
+  "repositories": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/repositories",
+      "dictIdsDefinition": {
+        "anyOf": [
+          { "instanceofyaml": "str" },
+          { "dictRequired": [ "url" ],
+            "dictProperties": {
+              "url":         { "instanceofyaml": "str" },
+              "description": { "$ref": "description"},
+              "credential":  {
+                "dictRequired": [ "token" ],
+                "dictProperties": {
+                  "protocol":   { "instanceofyaml": "str" },
+                  "token":      { "instanceofyaml": "str" },
+                  "token_type": { "instanceofyaml": "str" },
+                  "user":       { "instanceofyaml": "str" }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "ast": {
+      
+    }
+  }
+}

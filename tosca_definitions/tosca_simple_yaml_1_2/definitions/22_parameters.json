@@ -1,0 +1,76 @@
+{
+  "input_parameters": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/input_parameters",
+      "dictIdsDefinition": {
+        "dictRequired": [ "type" ],
+        "dictProperties": { 
+          "type":         { "instanceofyaml": "str" },
+          "description":  { "$ref": "description" }, 
+          "constraints":  { "$ref": "constraints" },
+          "required":     { "instanceofyaml": "bool" },
+          "default":      { "instanceof": "Value" },
+          "status":       {
+            "properties": {
+              "val": { 
+                "enum": ["supported", "unsupported", "experimental", "deprecated"]
+              }
+            }
+          },
+          "entry_schema": { "$ref": "entry_schema" },
+          "value": {
+            "anyOf": [
+              { "instanceof": "Value"},
+              { "$ref": "value_expression" }
+            ]
+          }
+        }
+      },
+      "ast": {
+
+      }
+    }
+  },
+
+  "input_assignments": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/input_assignments",
+      "$ref": "property_assignments"
+    },
+    "ast": {
+
+    }
+  },
+
+  "output_parameters": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/output_parameters",
+      "dictIdsDefinition": {
+        "dictProperties": { 
+          "type":         { "instanceofyaml": "str" },
+          "description":  { "$ref": "description" }, 
+          "constraints":  { "$ref": "constraints" },
+          "required":     { "instanceofyaml": "bool" },
+          "default":      { "instanceof": "Value" },
+          "status":       {
+            "properties": {
+              "value": { 
+                "enum": ["supported", "unsupported", "experimental", "deprecated"]
+              }
+            }
+          },
+          "entry_schema": { "$ref": "entry_schema" },
+          "value": {
+            "anyOf": [
+              { "$ref": "value_expression" },
+              { "instanceof": "Value"}
+            ]
+          }
+        }
+      }
+    },
+    "ast": {
+
+    }
+  }
+}

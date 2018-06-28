@@ -1,0 +1,43 @@
+{
+  "group_types": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/group_types",
+      "dictIdsDefinition": {
+        "dictProperties": {
+          "derived_from":       { "instanceofyaml": "str" },
+          "version":            { "instanceofyaml": [ "str", "float" ] },
+          "metadata":           { "$ref": "metadata" },
+          "description":        { "$ref": "description" },
+          "properties":         { "$ref": "properties" },
+          "capabilities":       { "$ref": "capability_defs" },
+          "requirements":       { "$ref": "requirement_defs" },
+          "interfaces":         { "$ref": "interface_defs" },
+          "members":            { "listItems": { "instanceofyaml": "str" } }
+        }
+      }
+    },
+    "ast": {
+      
+    }
+  },
+
+  "group_defs": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/group_defs",
+      "dictIdsDefinition": {
+        "dictRequired": [ "type" ],
+        "dictProperties": {
+          "type":               { "instanceofyaml": "str" },
+          "metadata":           { "$ref": "metadata" },
+          "description":        { "$ref": "description" },
+          "properties":         { "$ref": "properties" },
+          "members":            { "listItems": { "instanceofyaml": "str" } },
+          "interfaces":         { "$ref": "interface_defs_template" }
+        }
+      }
+    },
+    "ast": {
+      
+    }
+  }
+}
