@@ -14,8 +14,7 @@
          "workflows":                 { "$ref": "imperative_workflow_defs" }
       }
     },
-    "ast": {
-      
+    "factory": {
     }
   },
 
@@ -26,7 +25,7 @@
       "dictProperties": {
          "tosca_definitions_version": { "instanceofyaml": "str"},
          "description":               { "$ref": "description"},
-         "namespace" :                { "$ref": "imports" },
+         "namespace" :                { "$ref": "namespace" },
          "metadata" :                 { "$ref": "metadata"},
          "repositories" :             { "$ref": "repositories"},
          "imports" :                  { "$ref": "imports" },
@@ -41,9 +40,23 @@
          "topology_template" :        { "$ref": "topology_template" }
       }
     },
-    "ast": {
-      
+
+    "factory": {
+      "type": "ToscaServiceTemplate",
+      "args": {
+        "tosca_definitions_version": { 
+          "type": "ToscaStr", "path": "/tosca_definitions_version"
+        },
+        "description": {
+          "type": "ref", "path": "/description", "$ref": "description"
+        },
+        "namespace": {
+          "type": "ref", "path": "/namespace", "$ref": "namespace"
+        },
+        "metadata": {
+          "type": "ref", "path": "/metadata", "$ref": "metadata"
+        }
+      }
     }
   }
-
 }

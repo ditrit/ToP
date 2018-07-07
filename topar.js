@@ -2,6 +2,7 @@ const fs = require("fs")
 const yaml = require('yaml-js')
 const pointer = require('json-pointer');
 const ToscaSchemas = require("./ToscaSchema.js");
+const ToscaTypes = require("./ToscaTypes.js")
 
 const tosca_definitions = 'tosca_definitions';  
 
@@ -11,9 +12,11 @@ exports=module.exports={};
 
 function load_schemas() {
   let schemas = {}
+  let factory = {}
   versions = fs.readdirSync(tosca_definitions);
   for (let version of versions) {
       schemas[version] = {};
+      factory[version] = {};
       const schema_dir = `${tosca_definitions}/${version}/definitions`;
       let files;
       try {
@@ -34,6 +37,7 @@ function load_schemas() {
           try {
             for (let name in schema) {
               schemas[version][name] = ToscaSchemas.ajv.compile(schema[name].schema);
+              factory[version][name] = schema[name].factory;
             };
           } catch(e) {
               console.error(e);
@@ -41,10 +45,10 @@ function load_schemas() {
         }
       } 
   }
-  return schemas;
+  return [ schemas, factory ];
 }
 
-const _schemas = load_schemas();
+const [ _schemas, _factory ] = load_schemas();
 
 
 function adaptVals(ast) {
@@ -59,6 +63,7 @@ function adaptVals(ast) {
   } else ast.val = ast.value
   return ast
 }
+
 
 
 function buildYamlAst(input, filename) {
@@ -112,19 +117,137 @@ function validateToscaSyntax(ast, schema, version, filename) {
   return valid
 }
 
-function parse_file(filename, schema=null, version=null) {
-  let input = fs.readFileSync(filename, 'UTF-8');
-  return parse(input,  filename, schema, version);
+
+function getAstVal(data, jsonPath) {
+  //path = jsonPath.split("/").map(x => x.length>0 ? `/${x}/val`: "/val").join("")
+  if (jsonPath == "/" || jsonPath == "") {
+    return data
+  } else {
+    let parts = jsonPath.split("/")
+    let path = "/val"
+    if (parts.length > 1) {
+      for (var i = 1, len = parts.length - 1; i < len; i++) {
+        path += `/${parts[i]}/val`
+      }
+      path += `/${parts[i]}`
+    }
+    return (pointer.has(data, path)) ? pointer.get(data, path) : null
+  }
 }
 
-function parse_string(input, schema=null, version=null) {
-  let input = fs.readFileSync(filename, 'UTF-8');
-  return parse(input, null, schema, version);
+function getFromPath(input, path) {
+  if (!input) { return null }
+  let data = [ { data: input, keys: {} } ]
+  if (!path || path == "/" || path =="") { 
+    return data 
+  }
+  let parts = path.split("/")
+  for (var i=1, len = parts.length; i < len; i++) {
+    data = data.map( x => ("val" in x.data) ? { data: x.data.val, keys: x.keys } : "error")
+    if ("error" in data) { return null}  
+    let part = parts[i]
+    if (part.startsWith('@')) {
+      let newdata = []
+      data.forEach(function(x) {
+        for (ele in x.data) {
+          let newkeys = {}
+          for (k in x.keys) { newkeys[k] = x.keys[k] }
+          newkeys[part] = ele
+          newdata.push({ data: x.data[ele], keys: newkeys })
+        }
+      })
+      data = newdata
+    } else {
+      data = data.map(x => (part in x.data) ? { data: x.data[part], keys: x.keys } : "error")
+      if ("error" in data) { return null} 
+    }
+  }
+
+  return data
 }
 
-function parse(input, filename, schema, version) {
-  let ast   = buildYamlAst(input, filename);
-  let valid = validateToscaSyntax(ast, schema, version, filename)
+function toscaAstPath(input, pathDef, tosca_version) {
+  let type    = pathDef.type
+  let path    = pathDef.path
+  let ref     = pathDef.$ref
+  let isin    = pathDef.isin
+  let isnotin = pathDef.isnotin
+
+  if (path == "/description") debugger
+  let dataPath = getFromPath(input, path)
+  let data = (dataPath) ? dataPath[0].data : dataPath
+  if (ref) {
+    data = toscaAstFactory(data, _factory[tosca_version][ref], tosca_version)
+  } 
+
+  let res
+  if (type && type != 'ref') {
+    res = new ToscaTypes.DynamicClass((!data) ? "ToscaNull" : type, { value: data }, input)
+  } else {
+    res = data
+  }
+
+  return res
+}
+
+function toscaAstArgs(input, argsDef, tosca_version) {
+  let type = argsDef.type
+  let args = argsDef.args
+
+  let newArgs = {}
+  for (let ele in args) {
+    if (!ele.startsWith('@')) {
+      newArgs[ele] = toscaAstFactory(input, args[ele], tosca_version)
+    }
+  }
+
+  let res
+  if (type) {
+    res = new ToscaTypes.DynamicClass((!input) ? "ToscaNull" : type, newArgs, input)
+  } else {
+    res = data
+  }
+  return res
+}
+
+function toscaAstFactory(input, astDef, tosca_version) {
+  let type = astDef.type
+  if ("args" in astDef && "path" in astDef) throw Error("ast ToscaDefinition can not use 'args' and 'path' simultaneously")
+
+  if ("args" in astDef) {
+    return toscaAstArgs(input, astDef, tosca_version)
+  } else if ("path" in astDef) {
+    return toscaAstPath(input, astDef, tosca_version)
+  } else {
+      throw Error(`ast ToscaDefinition must use 'args' or 'path' : ${JSON.stringify(astDef, null, 2)}`)
+  }
+}
+
+function buildToscaAst(ast, schema_name, version, filename) {
+  let tosca_version = (version) ? version :   "tosca_simple_yaml_1_2"
+  let factory_name  = (schema_name)  ? schema_name  : "service_template"
+  let factory = _factory[tosca_version][factory_name]
+  let ret = toscaAstFactory(ast, factory, tosca_version)
+  return ret
+}
+
+function parse_file(filename, schema_name=null, version=null) {
+  let input = fs.readFileSync(filename, 'UTF-8');
+  return parse(input,  filename, schema_name, version);
+}
+
+function parse_string(input, schema_name=null, version=null) {
+  let input = fs.readFileSync(filename, 'UTF-8');
+  return parse(input, null, schema_name, version);
+}
+
+function parse(input, filename, schema_name, version) {
+  let yamlAst   = buildYamlAst(input, filename);
+  if ( validateToscaSyntax(yamlAst, schema_name, version, filename) ) {
+    toscaAst = buildToscaAst(yamlAst, schema_name, version, filename)
+    console.log(toscaAst)
+  }
+
 };
 
 exports.parse_file=parse_file

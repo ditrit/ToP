@@ -9,6 +9,7 @@ metadata:
 description: TOSCA 1.2 normative types defintion, node types part
 #url: http://docs.oasis-open.org/tosca/TOSCA-Simple-Profile-YAML/v1.2/csprd01/TOSCA-Simple-Profile-YAML-v1.2-csprd01.html
 
+
 node_types:
   
   #section: 5.9.1 tosca.nodes.Root

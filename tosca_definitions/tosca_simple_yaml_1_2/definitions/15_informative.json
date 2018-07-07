@@ -6,8 +6,8 @@
       "$id": "http://ditrit.io/schemas/description",
       "instanceofyaml": "str"
     },
-    "ast": {
-
+    "factory": {
+      "type": "ToscaStr", "path": "/"
     }
   },
 
@@ -16,8 +16,8 @@
       "$id": "http://ditrit.io/schemas/namespace",
       "instanceofyaml": "str"
     },
-    "ast": {
-      
+    "factory": {
+      "type": "ToscaStr", "path": "/" 
     }
   },
 
@@ -31,10 +31,23 @@
       },
       "dictAdditionalProperties": { "instanceofyaml": "str" }
     },
-    "ast": {
-      
+    "factory": {
+      "type": "ToscaMetadata",
+      "args": { 
+        "template_name":    { 
+          "type": "ToscaStr", "path": "/template_name" 
+        },
+        "template_author":  { 
+          "type": "ToscaStr", "path": "/template_author"
+        },
+        "template_version": { 
+          "type": "ToscaVersion", "path": "/template_version"
+        },
+        "@other": {
+          "type": "ToscaStr", "path": "/@other", "notin": [ "template_name", "template_author", "template_version" ]
+        }
+      }
     }
-
   }
 
 }
