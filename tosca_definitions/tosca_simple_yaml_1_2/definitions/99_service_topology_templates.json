@@ -15,6 +15,7 @@
       }
     },
     "factory": {
+      "type": "or"
     }
   },
 
@@ -48,13 +49,16 @@
           "type": "ToscaStr", "path": "/tosca_definitions_version"
         },
         "description": {
-          "type": "ref", "path": "/description", "$ref": "description"
+          "path": "/description", "ref": "description"
         },
         "namespace": {
-          "type": "ref", "path": "/namespace", "$ref": "namespace"
+          "path": "/namespace", "ref": "namespace"
         },
         "metadata": {
-          "type": "ref", "path": "/metadata", "$ref": "metadata"
+          "path": "/metadata", "ref": "metadata"
+        },
+        "imports": {
+          "path": "/imports", "ref": "imports"
         }
       }
     }

@@ -11,3 +11,4 @@ ToscaListener*
 Tosca.*
 a.js
 package-lock.json
+test_*

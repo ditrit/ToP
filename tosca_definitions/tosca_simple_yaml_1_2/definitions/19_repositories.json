@@ -23,8 +23,31 @@
         ]
       }
     },
-    "ast": {
-      
+    "factory": {
+      "type": "ToscaRepositories",
+      "args": {
+        "@id": { 
+          "path": "/@id", "anyOf": [
+            { "type": "ToscaRepository" },
+            { "type": "ToscaRepository", 
+              "args": {
+                "url":         { "type": "ToscaURL", "path": "/url" },
+                "description": { "path": "/description", "ref": "description" },
+                "credential":  { 
+                  "type": "ToscaCredential",
+                  "path": "/credential",
+                  "args": {
+                    "token":      { "type": "ToscaStr", "path": "/token" },
+                    "protocol":   { "type": "ToscaStr", "path": "/protocol" },
+                    "token_type": { "type": "ToscaStr", "path": "/token_type" },
+                    "user":       { "type": "ToscaStr", "path": "/user" }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
     }
   }
 }

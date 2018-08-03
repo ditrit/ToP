@@ -17,7 +17,7 @@
       "instanceofyaml": "str"
     },
     "factory": {
-      "type": "ToscaStr", "path": "/" 
+      "type": "ToscaURL", "path": "/" 
     }
   },
 
@@ -33,7 +33,7 @@
     },
     "factory": {
       "type": "ToscaMetadata",
-      "args": { 
+      "args": {
         "template_name":    { 
           "type": "ToscaStr", "path": "/template_name" 
         },
@@ -44,7 +44,7 @@
           "type": "ToscaVersion", "path": "/template_version"
         },
         "@other": {
-          "type": "ToscaStr", "path": "/@other", "notin": [ "template_name", "template_author", "template_version" ]
+          "type": "ToscaStr", "path": "/@other", "isnotin": [ "template_name", "template_author", "template_version" ]
         }
       }
     }

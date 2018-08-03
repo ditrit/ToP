@@ -4,6 +4,8 @@ metadata:
   template_name:    node_types
   template_author:  ditrit
   template_version: 1.0
+  titi: toto
+  tata: tutu
 
 
 description: TOSCA 1.2 normative types defintion, node types part
