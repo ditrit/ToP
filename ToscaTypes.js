@@ -43,11 +43,12 @@ class ToscaVersion extends ToscaAst {
 class ToscaServiceTemplate extends ToscaAst {
   constructor(args, context)  {
   	super(context)
-  	this.tosca_definitions_version 	= args.tosca_definitions_version
-  	this.description 				= args.description
-  	this.namespace 					= args.namespace
-  	this.metadata 					= args.metadata
-    this.imports            = args.imports
+  	this.tosca_definitions_version 	
+                      = args.data.tosca_definitions_version
+  	this.description 	= args.data.description
+  	this.namespace 		= args.data.namespace
+  	this.metadata 		= args.data.metadata
+    this.imports      = args.data.imports
   }
 }
 
@@ -57,8 +58,8 @@ class ToscaMetadata extends ToscaAst {
 //  	this.template_author 	= args.template_author
 //  	this.template_version	= args.template_version
 //  	this.template_name 		= args.template_name
-  	for (let metadata in args) {
-  		this[metadata] = args[metadata]
+  	for (let metadata in args.data) {
+  		this[metadata] = args.data[metadata]
   	}
   }
 }
@@ -77,18 +78,18 @@ class ToscaRepository extends ToscaAst {
   		this.url = new ToscaURL(args, context) 
   		this.description = null
   		this.credential = null
-  	} else if (args.url) {
-  		this.url = args.url
-  		this.description = args.description
-  		this.credential = args.credential
-  	} else throw Error(`Syntax error : '${this.val}' is not a valid url`);
+  	} else if (args.data.url) {
+  		this.url = args.data.url
+  		this.description = args.data.description
+  		this.credential = args.data.credential
+  	} else throw Error(`Syntax error : '${this.data.val}' is not a valid url`);
   }
 }
 
 class ToscaRepositories extends ToscaAst {
   constructor(args, context)  {
   	super(context)
-  	this.ids = args
+  	this.ids = args.data
   }
 }
 
@@ -96,17 +97,17 @@ class ToscaCredential extends ToscaAst {
   constructor(args, context)  {
   	super(context)
     debugger
-  	this.token 		= args.token
-  	this.protocol 	= args.protocol
-  	this.token_type = args.token_type
-  	this.user 		= args.user 
+  	this.token 		= args.data.token
+  	this.protocol 	= args.data.protocol
+  	this.token_type = args.data.token_type
+  	this.user 		= args.data.user 
   }
 }
 
 class ToscaImports extends ToscaAst {
   constructor(args, context)  {
     super(context)
-    this.items = args
+    this.items = args.data
   }
 }
 
@@ -114,10 +115,10 @@ class ToscaImport extends ToscaAst {
   constructor(args, context)  {
     super(context)
     debugger
-    this.repository       = args.repository
-    this.file             = args.file
-    this.namespace_prefix = args.namespace_prefix
-    this.namespace_uri    = args.uri
+    this.repository       = args.data.repository
+    this.file             = args.data.file
+    this.namespace_prefix = args.data.namespace_prefix
+    this.namespace_uri    = args.data.uri
   }
 }
     
@@ -139,7 +140,7 @@ const classes = {
 
 class DynamicClass {
     constructor (className, args, context) {
-        return new classes[className](args, context);
+        return new classes[(args) ? className : "ToscaNull"](args, context);
     }
 }
 

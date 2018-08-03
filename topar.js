@@ -158,7 +158,7 @@ function getFromPath(input, path, isin, isnotin) {
 
 function toscaFactoryRef(input, ref, tosca_version) {
   if (!ref) return null;
-  return toscaFactory(input.data, _factory[tosca_version][ref], tosca_version)
+  return toscaFactory(input.data, _factory[tosca_version][ref], tosca_version)[0]
 }
 
 function toscaFactoryAnyOf(input, anyOf, tosca_version) {
@@ -170,8 +170,7 @@ function toscaFactoryAnyOf(input, anyOf, tosca_version) {
     data = toscaFactory(input.data, anyOf[i], tosca_version)
     found = ( _errors.length == 0 )
   }
-  data.map( x => x.keys = input.keys )
-  return data
+  return { data: data[0].data, keys: input.keys }
 }
 
 function toscaFactoryItems(input, items, tosca_version) {
@@ -184,7 +183,7 @@ function toscaFactoryItems(input, items, tosca_version) {
         data_list.push(item_ele.data)
       }
     } 
-    return [ data_list ] //[ { data: data_list, keys: {} } ]
+    return data_list // { data: data_list, keys: {} }
   } else {
     _errors.push(`Syntax error: input should be a list (${input})`)
     return null
@@ -211,51 +210,42 @@ function toscaFactoryArgs(input, args, tosca_version) {
       })
     }
   }
-  return [ newArgs ] //[ { data: newArgs, keys: {} } ]
+  return { data: newArgs, keys: {} }
 }
 
 function toscaFactory(input, factory, tosca_version) {
   if (!factory) return []
-  let type = factory.type
-  if (type && !(type in ToscaTypes.classes)) {
-    throw Error(`invalid type (${type}) in tosca factory definition`)
-  }
 
   // 1. extract data from path ==> [ {val: ... , keys: ... } ]
-  let dataPath = getFromPath(input, factory.path, factory.isin, factory.isnotin)
+  let data = getFromPath(input, factory.path, factory.isin, factory.isnotin)
+
 
   // 2. collect results for each data from path, 
-  let dataRes = []
-  dataPath.forEach(function(data_item) {
-    let data =  toscaFactoryRef(   data_item, factory.ref,   tosca_version ) ||
-                toscaFactoryAnyOf( data_item, factory.anyOf, tosca_version ) ||
-                toscaFactoryArgs(  data_item, factory.args,  tosca_version ) || 
-                toscaFactoryItems( data_item, factory.items, tosca_version ) || 
-                [ data_item ]
-    console.log(`data length = ${data.length}`)
-
-    for ( let data_ele of data ) {
-      dataRes.push(data_ele) 
-    }
+  data = data.map(function(data_item) {
+    return  toscaFactoryRef(   data_item, factory.ref,   tosca_version ) ||
+            toscaFactoryAnyOf( data_item, factory.anyOf, tosca_version ) ||
+            toscaFactoryArgs(  data_item, factory.args,  tosca_version ) || 
+            toscaFactoryItems( data_item, factory.items, tosca_version ) || 
+            data_item
   })
 
   // 3. Create ToscaObject
-  let res = []
-  dataRes.forEach(function(data_item) {
-    if (type) {
-      try {
-        newData = new ToscaTypes.DynamicClass((!data_item) ? "ToscaNull" : type, data_item, input)
-      } catch (e) {
-        _errors.push(`${e.name}: ${e.message}`)
-        newData = null
-      }
-    } else {
-      newData = data_item.data
-    }
-    res.push({ data: newData, keys: (data_item.keys) ? data_item.keys : {} })
-  }) 
+  let type = factory.type
+  if (type) {
+    if (type in ToscaTypes.classes) {
+      data = data.map(function(data_item) {
+        try {
+          return {  data: new ToscaTypes.DynamicClass(type, data_item, input),
+                    keys: (data_item.keys) ? data_item.keys : {} }
+        } catch (e) {
+          _errors.push(`${e.name}: ${e.message}`)
+          return { data: null, keys: {} }
+        }
+      })
+    } else throw Error(`invalid type (${type}) in tosca factory definition`)
+  }
 
-  return res
+  return data
 }
 
 function buildToscaAst(ast, schema_name, version, filename) {
