@@ -138,20 +138,23 @@ function getFromPath(input, path, isin, isnotin) {
     if (part.startsWith('@')) {
       let newdata = []
       data.forEach(function(x) {
-        for (let ele in x.data) {
-          if ( (!isin || (ele.includes(isin)) ) && ( !isnotin || (!(ele.includes(isnotin))) ) ) { 
-            let newkeys = {}
-            for (k in x.keys) { newkeys[k] = x.keys[k] }
-            newkeys[part] = ele
-            newdata.push({ data: x.data[ele], keys: newkeys })
+        if (x.data instanceof Object && !(x.data instanceof Array)) { 
+          for (let ele in x.data) {
+            if ( (!isin || (ele.includes(isin)) ) && ( !isnotin || (!(ele.includes(isnotin))) ) ) { 
+              let newkeys = {}
+              for (k in x.keys) { newkeys[k] = x.keys[k] }
+              newkeys[part] = ele
+              newdata.push({ data: x.data[ele], keys: newkeys })
+            }
           }
-        }
+        } else newdata.push("error")
       })
       data = newdata
     } else {
-      data = data.map(x => (part in x.data) ? { data: x.data[part], keys: x.keys } : "error")
-      if (data.includes("error")) { return [] }
+      data = data.map(x => (x.data instanceof Object && !(x.data instanceof Array) && part in x.data) 
+                           ? { data: x.data[part], keys: x.keys } : "error")
     }
+    if (data.includes("error")) { return [] }
   }
   return data
 }
@@ -162,6 +165,7 @@ function toscaFactoryRef(input, ref, tosca_version) {
 }
 
 function toscaFactoryAnyOf(input, anyOf, tosca_version) {
+  debugger
   if (!anyOf) return null;
   let found = false
   let data = null
@@ -174,16 +178,17 @@ function toscaFactoryAnyOf(input, anyOf, tosca_version) {
 }
 
 function toscaFactoryItems(input, items, tosca_version) {
+  debugger
   if (!items) return null;
   let data_list = []
   if (input.data.val instanceof Array) {
     for (let ele of input.data.val ) {
       let item = toscaFactory(ele, items, tosca_version)
-      for (let item_ele in item) {
+      for (let item_ele of item) {
         data_list.push(item_ele.data)
       }
-    } 
-    return data_list // { data: data_list, keys: {} }
+    }
+    return { data: data_list, keys: {} }
   } else {
     _errors.push(`Syntax error: input should be a list (${input})`)
     return null
@@ -196,7 +201,7 @@ function toscaFactoryArgs(input, args, tosca_version) {
   for (let ele in args) {
     let eleData = toscaFactory(input.data, args[ele], tosca_version)
     if (eleData.length == 0) {
-      newArgs[ele] = null
+      if (ele.indexOf('@') < 0) newArgs[ele] = null
       // handles simple ids
     } else if (ele.indexOf('@') < 0) {
       newArgs[ele] = eleData[0].data
@@ -210,7 +215,7 @@ function toscaFactoryArgs(input, args, tosca_version) {
       })
     }
   }
-  return { data: newArgs, keys: {} }
+  return { data: newArgs, keys: input.keys }
 }
 
 function toscaFactory(input, factory, tosca_version) {
@@ -218,7 +223,6 @@ function toscaFactory(input, factory, tosca_version) {
 
   // 1. extract data from path ==> [ {val: ... , keys: ... } ]
   let data = getFromPath(input, factory.path, factory.isin, factory.isnotin)
-
 
   // 2. collect results for each data from path, 
   data = data.map(function(data_item) {
@@ -233,6 +237,7 @@ function toscaFactory(input, factory, tosca_version) {
   let type = factory.type
   if (type) {
     if (type in ToscaTypes.classes) {
+      if  (data.length == 0) _errors.push(`No data to instanciate ${type}`) 
       data = data.map(function(data_item) {
         try {
           return {  data: new ToscaTypes.DynamicClass(type, data_item, input),

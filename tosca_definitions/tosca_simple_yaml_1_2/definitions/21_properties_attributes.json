@@ -19,8 +19,21 @@
         "schema":           { "instanceofyaml": "str" } 
       }
     },
-    "ast": {
-
+    "factory": {
+      "anyOf": [
+        { "type": "ToscaConstraintEqual", "path": "/equal" },
+        { "type": "ToscaConstraintGreaterThan", "path": "/greater_than" },
+        { "type": "ToscaConstraintGreaterOrEqual", "path": "/greater_or_equal" },
+        { "type": "ToscaConstraintLessThan", "path": "/less_than" },
+        { "type": "ToscaConstraintLessOrEqual", "path": "/less_or_equal" },
+        { "type": "ToscaConstraintInRange", "path": "/in_range" },
+        { "type": "ToscaConstraintValidValues", "path": "/valid_values" },
+        { "type": "ToscaConstraintLength", "path": "/length" },
+        { "type": "ToscaConstraintMinLength", "path": "/min_length" },
+        { "type": "ToscaConstraintMaxLength", "path": "/max_length" },
+        { "type": "ToscaConstraintPattern", "path": "/pattern" },
+        { "type": "ToscaConstraintSchema", "path": "/schema" }
+      ]
     }
   },
 
@@ -29,8 +42,8 @@
       "$id": "http://ditrit.io/schemas/constraints",
       "listItems": { "$ref": "constraint" }
     },
-    "ast": {
-
+    "factory": {
+      "type": "ToscaConstraints", "items": { "ref": "constraint" }
     }
   },
 

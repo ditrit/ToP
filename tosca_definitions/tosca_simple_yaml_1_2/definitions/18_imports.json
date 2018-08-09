@@ -23,20 +23,21 @@
       "type": "ToscaImports",
       "items": {
         "anyOf": [
-          { "type": "ToscaImport", 
-            "args": {
-              "@id": {
-                "args": {
-                  "file":         { "type": "ToscaURL", "path": "/file" },
-                  "repository":   { "type": "ToscaStr", "path": "/repository" },
-                  "namespace_prefix":  { "type": "ToscaURL", "path": "/namespace_prefix" },
-                  "namespace_uri":  { "type": "ToscaURL", "path": "/namespace_uri" }
+          { "type": "ToscaImport", "args": {
+              "@id": { "path": "/@id", "args": {
+                  "file": { "type": "ToscaURL", "path": "/file" },
+                  "repository": { "type": "ToscaStr", "path": "/repository" },
+                  "namespace_prefix": { "type": "ToscaURL", "path": "/namespace_prefix" },
+                  "namespace_uri": { "type": "ToscaURL", "path": "/namespace_uri" }
                 }
               }
             }
           },
-          { "type": "ToscaImport", "args": { "@id": { "type": "ToscaStr", "path": "/@id" } } },
-          { "type": "ToscaImport" }
+          { "type": "ToscaImport", "args": { 
+              "@id": { "path": "/@id", "args": { 
+                "file": { "type": "ToscaURL", "path": "/" } } } } },
+          { "type": "ToscaImport", "args": { 
+                "file": { "type": "ToscaURL", "path": "/" } } }
         ]
       }
     }
