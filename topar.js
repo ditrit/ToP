@@ -165,7 +165,6 @@ function toscaFactoryRef(input, ref, tosca_version) {
 }
 
 function toscaFactoryAnyOf(input, anyOf, tosca_version) {
-  debugger
   if (!anyOf) return null;
   let found = false
   let data = null
@@ -178,7 +177,6 @@ function toscaFactoryAnyOf(input, anyOf, tosca_version) {
 }
 
 function toscaFactoryItems(input, items, tosca_version) {
-  debugger
   if (!items) return null;
   let data_list = []
   if (input.data.val instanceof Array) {

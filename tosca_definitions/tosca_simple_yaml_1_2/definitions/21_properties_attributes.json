@@ -62,8 +62,18 @@
         }
       ]
     },
-    "ast": {
-
+    "factory": {
+      "type": "ToscaTypeDef",
+      "anyOf": [
+        { "args": {
+            "type": { "type": "ToscaStr", "path": "/type"},
+            "description": { "path": "/description", "ref": "description"},
+            "constraints": { "path": "/constraints", "ref": "constraints"},
+            "entry_schema": { "path": "/entry_schema", "ref": "entry_schema"}
+          }
+        },
+        { "type": "ToscaStr" }
+      ]
     }
   },
 
@@ -90,8 +100,23 @@
         }
       }
     },
-    "ast": {
-
+    "factory": {
+      "type": "ToscaProperties",
+      "args": {
+        "@id": { 
+          "path": "/@id", 
+          "type": "ToscaProperty", 
+          "args": {
+            "type": { "ref": "entry_schema", "path": "/" },
+            "description": { "ref": "description", "path": "/description" },
+            "constraints": { "ref": "constraints", "path": "/constraints" },
+            "required":    { "type": "ToscaBool", "path": "/required" },
+            "status":      { "type": "ToscaStr", "path": "/status" },
+            "metadata":    { "ref": "metadata", "path": "/metadata" },
+            "default":     { "path": "/default" } 
+          }
+        }
+      }
     }
   },
 
@@ -130,8 +155,20 @@
         }
       }
     },
-    "ast": {
-
+    "factory": {
+      "type": "ToscaAttributes",
+      "args": {
+        "@id": { 
+          "path": "/@id", 
+          "type": "ToscaAttribute", 
+          "args": {
+            "type": { "ref": "entry_schema", "path": "/" },
+            "description": { "ref": "description", "path": "/description" },
+            "status":      { "type": "ToscaStr", "path": "/status" },
+            "default":     { "path": "/default" } 
+          }
+        }
+      }
     }
   },
 
@@ -151,9 +188,7 @@
         ]
       }
     },
-    "ast": {
-      
+    "ast": {   
     }
   }
-
 }

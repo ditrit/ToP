@@ -2,21 +2,28 @@
 exports=module.exports={};
 
 class ToscaAst {
-  constructor(context) {
-  	this.context = context
+  constructor(args, context) {
+    if (args && args.data ) {
+      this.context = context
+      this.tag = args.data.tag
+      if (!this.tag) this.tag = ""
+      this.val = args.data.val 
+    } else
+      throw Error(`Syntax error : no value found`);
   }
 }
 
 class ToscaStr extends ToscaAst {
   constructor(args, context) {
-  	super(args.data)
- 	this.val = (args && args.data ) ? args.data.val : null
+  	super(args, args.data)
+    if (!this.tag.endsWith(':str') )
+      throw Error(`Syntax error : ${args.data} is not a string`);
   }
 }
 
-class ToscaURL extends ToscaAst {
+class ToscaURL extends ToscaStr {
   constructor(args, context) {
-    super(args.data)
+    super(args, context)
 
     var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
       '((([a-z\\d]([a-z\\d_-]*[a-z\\d])*)\\.?)+[a-z\\d_-]{2,}|'+ // domain name
@@ -25,56 +32,102 @@ class ToscaURL extends ToscaAst {
       '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
       '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
 
-    this.val = (args && args.data ) ? args.data.val : null
-
-    if (!pattern.test(this.val)) {
+    if (!pattern.test(this.val))
       throw Error(`Syntax error : '${this.val}' is not a valid url`);
-    }
+  }
+}
+
+class ToscaBool extends ToscaAst {
+  constructor(args, context) {
+    super(args, args.data)
+    if (!this.tag.endsWith(':bool') )
+      throw Error(`Syntax error : ${args.data} is not a boolean`);
+  }
+}
+
+class ToscaInteger extends ToscaAst {
+  constructor(args, context) {
+    super(args, args.data)
+    if (!this.tag.endsWith(':int') )
+      throw Error(`Syntax error : ${args.data} is not an integer`);
+  }
+}
+
+class ToscaFloat extends ToscaAst {
+  constructor(args, context) {
+    super(args, args.data)
+    if (!this.tag.endsWith(':float') )
+      throw Error(`Syntax error : ${args.data} is not a float`);
+  }
+}
+
+class ToscaTimestamp extends ToscaAst {
+  constructor(args, context) {
+    super(args, args.data)
+    if (!this.tag.endsWith(':timestamp') )
+      throw Error(`Syntax error : ${args.data} is not a timestamp`);
   }
 }
 
 class ToscaVersion extends ToscaAst {
   constructor(args, context) {
-  	super(args.data)
- 	this.val = (args && args.data) ? args.data.val : null
-  }	
+  	super(args, args.data)
+    let str
+    if (args.data instanceof ToscaFloat || this.tag.endsWith(':float') ) {
+      str = args.data.val.toString()
+    } else if (args.data instanceof ToscaStr || this.tag.endsWith(':string')) {
+      str = args.data.val
+    } else 
+      throw Error(`Syntax error : ${args.data} is not a version`);
+    let parts = str.split(".")
+    this.major = parts[0]
+    this.minor = parts[1]
+    this.fix   = parts[2]
+    let last   = parts[3]
+    if (typeof(last) == 'string') {
+      parts = last.split(".")
+      this.qualifier = parts[0]
+      this.build     = parts[1]
+    }
+  }
+}
+
+class ToscaNull extends ToscaAst {
+  constructor(args, context)  {
+    super({data: null}, null)
+    this.val = null
+  }
 }
 
 class ToscaServiceTemplate extends ToscaAst {
   constructor(args, context)  {
-  	super(context)
-  	this.tosca_definitions_version 	
-                      = args.data.tosca_definitions_version
-  	this.description 	= args.data.description
-  	this.namespace 		= args.data.namespace
-  	this.metadata 		= args.data.metadata
-    this.imports      = args.data.imports
+  	super(args, context)
+  	this.tosca_definitions_version
+                      = this.tosca_definitions_version
+  	this.description 	= this.description
+  	this.namespace 		= this.namespace
+  	this.metadata 		= this.metadata
+    this.imports      = this.imports
   }
 }
 
 class ToscaMetadata extends ToscaAst {
   constructor(args, context)  {
-  	super(context)
+    super(args, context)
 //  	this.template_author 	= args.template_author
 //  	this.template_version	= args.template_version
 //  	this.template_name 		= args.template_name
-  	for (let metadata in args.data) {
-  		this[metadata] = args.data[metadata]
+  	for (let metadata in this.val) {
+  		this[metadata] = this.val[metadata]
   	}
-  }
-}
-
-
-class ToscaNull extends ToscaAst {
-  constructor(args, context)  {
-  	super(null)  
   }
 }
 
 class ToscaRepository extends ToscaAst {
   constructor(args, context)  {
-  	super(context)
-  	if (args && args.data && args.data.val) {
+    debugger
+    super(args, context)
+  	if (this.tag.endsWith(":str")) {
   		this.url = new ToscaURL(args, context) 
   		this.description = null
   		this.credential = null
@@ -82,21 +135,20 @@ class ToscaRepository extends ToscaAst {
   		this.url = args.data.url
   		this.description = args.data.description
   		this.credential = args.data.credential
-  	} else throw Error(`Syntax error : '${this.data.val}' is not a valid url`);
+  	} else throw Error(`Syntax error : '${args.data}' is not a valid repository`);
   }
 }
 
 class ToscaRepositories extends ToscaAst {
   constructor(args, context)  {
-  	super(context)
+    super(args, context)
   	this.ids = args.data
   }
 }
 
 class ToscaCredential extends ToscaAst {
   constructor(args, context)  {
-  	super(context)
-    debugger
+    super(args, context)
   	this.token 		= args.data.token
   	this.protocol 	= args.data.protocol
   	this.token_type = args.data.token_type
@@ -106,14 +158,14 @@ class ToscaCredential extends ToscaAst {
 
 class ToscaImports extends ToscaAst {
   constructor(args, context)  {
-    super(context)
+    super(args, context)
     this.items = args.data
   }
 }
 
 class ToscaImport extends ToscaAst {
   constructor(args, context)  {
-    super(context)
+    super(args, context)
     let data = args.data
     if (!(data instanceof Object)) 
       throw Error(`Syntax error : no valid import found`);
@@ -135,15 +187,15 @@ class ToscaImport extends ToscaAst {
 
 class ToscaConstraints extends ToscaAst {
   constructor(args, context) {
-    super(context)
+    super(args, context)
     this.items = args.data
   }
 }
 
 class ToscaConstraint extends ToscaAst {
   constructor(args, context) {
-    super(context)
-    this.args = args.data
+    super(args, context)
+    this.value = args.data
   }
 }
 
@@ -208,13 +260,115 @@ class ToscaConstraintSchema extends ToscaConstraint {
   }
 }
 
+class ToscaTypeDef extends ToscaAst {
+
+  constructor(args, context) {
+    debugger
+    super(args, context)
+    if (!(args.data instanceof Object)) 
+      throw Error(`Syntax error : no valid data type`);
+    if (args.data instanceof ToscaStr) {
+      this.type = args.data
+    } else if (!(args.data.type instanceof ToscaStr)) {
+        throw Error(`Syntax error : a data type must have a 'type' value`)
+    } else {
+      this.type = args.data.type
+      this.constraints = args.data.constraints
+      this.description = args.data.description
+      this.entry_schema = args.data.entry_schema
+    }
+  }
+}
+
+class ToscaParameter extends ToscaAst {
+  constructor(args, context) {
+    super(args, context)
+    this.type =         args.data.type
+    this.description =  args.data.description
+    this.status =       args.data.status
+    this.default =      args.data.default
+  }
+}
+
+class ToscaAttributes extends ToscaAst {
+  constructor(args, context) {
+    debugger
+    super(args, context)
+    this.ids = args.data
+  }
+}
+
+class ToscaAttribute extends ToscaParameter {
+  constructor(args, context) {
+    debugger
+    super(args, context)
+  }
+}
+
+class ToscaProperties extends ToscaAst {
+  constructor(args, context) {
+    debugger
+    super(args, context)
+    this.ids = args.data
+  }
+}
+
+class ToscaProperty extends ToscaParameter {
+  constructor(args, context) {
+    debugger
+    super(args, context)
+    this.constraints =  args.data.constraints
+    this.required =     args.data.required
+    this.metadata =     args.data.metadata
+  }  
+}
+
+class ToscaInputs extends ToscaAst {
+  constructor(args, context) {
+    debugger
+    super(args, context)
+    this.ids = args.data
+  }
+}
+
+class ToscaInput extends ToscaParameter {
+  constructor(args, context) {
+    debugger
+    super(args, context)
+    this.constraints =  args.data.constraints
+    this.required =     args.data.required
+    this.value =     args.data.value
+  }  
+}
+
+class ToscaOutputs extends ToscaAst {
+  constructor(args, context) {
+    debugger
+    super(args, context)
+    this.ids = args.data
+  }
+}
+
+class ToscaOutput extends ToscaParameter {
+  constructor(args, context) {
+    debugger
+    super(args, context)
+    this.constraints =  args.data.constraints
+    this.required =     args.data.required
+    this.value =     args.data.value
+  }  
+}
 
 const classes = {
   ToscaAst,
-	ToscaNull,
-	ToscaVersion,
   ToscaStr,
   ToscaURL,
+  ToscaBool,
+  ToscaInteger,
+  ToscaFloat,
+  ToscaVersion,
+  ToscaTimestamp,
+  ToscaNull,
   ToscaServiceTemplate,
   ToscaMetadata,
   ToscaRepository,
@@ -234,7 +388,17 @@ const classes = {
   ToscaConstraintMinLength,
   ToscaConstraintMaxLength,
   ToscaConstraintPattern,
-  ToscaConstraintSchema
+  ToscaConstraintSchema,
+  ToscaTypeDef,
+  ToscaProperty,
+  ToscaProperties,
+  ToscaAttribute,
+  ToscaAttributes,
+  ToscaInput,
+  ToscaInputs,
+  ToscaOutput,
+  ToscaOutputs,
+  
 };
 
 class DynamicClass {

@@ -1,87 +1,81 @@
-app = require(process.cwd() + "/topar.js");
+basedir=process.cwd()
+
+classes = require(basedir + '/ToscaTypes.js').classes
+app = require(basedir + '/topar.js');
 
 describe("Tosca Compiler syntax -> ", function() {
 	
   describe("attributes : ", function() {
 
 	it("The compiler should accept example of the normative doc",
-		function() { expect( app.parse_syntax(`
-attributes:
+		function() { expect( app.parse_string(`
   actual_cpus:
     type: integer
     description: Number of CPUs requested for a software node instance.
-`, 'test_attributes' ).errors).toEqual([]) });
+`, 'attributes' ) instanceof classes.ToscaAttributes).toEqual(true) });
 
 	it("The compiler should attribute with no description",
-		function() { expect( app.parse_syntax(`
-attributes:
+		function() { expect( app.parse_string(`
   names:
     type: list
     entry_schema: string 
-`, 'test_attributes' ).errors).toEqual([]) });
+`, 'attributes' ) instanceof classes.ToscaAttributes).toEqual(true) });
 
 	it("The compiler should accept attribute with entry_schema",
-		function() { expect( app.parse_syntax(`
-attributes:
+		function() { expect( app.parse_string(`
   names:
     type: list
     entry_schema: string
     description: A list of names 
-`, 'test_attributes' ).errors).toEqual([]) });
+`, 'attributes' ) instanceof classes.ToscaAttributes).toEqual(true) });
 
 	it("The compiler should accept attribute with list but no entry_schema",
-		function() { expect( app.parse_syntax(`
-attributes:
+		function() { expect( app.parse_string(`
   names:
       type: list
       description: Actual number of CPUs allocated to the node instance """))
-`, 'test_attributes' ).errors).toEqual([]) });
+`, 'attributes' ) instanceof classes.ToscaAttributes).toEqual(true) });
 
 	it("The compiler should not accept attribute with metadata",
-		function() { expect( app.parse_syntax(`
-attributes:
+		function() { expect( app.parse_string(`
   names:
       type: list
       description: Actual number of CPUs allocated to the node instance
       metadata: 
         un:    deux
         trois: quatre
-`, 'test_attributes' ).errors[0].text).toContain("extraneous input 'metadata'") });
+`, 'attributes' ) instanceof classes.ToscaAttributes).toEqual(false) });
 	
 	it("The compiler should accept attribute with default",
-		function() { expect( app.parse_syntax(`
-attributes:
+		function() { expect( app.parse_string(`
   actual_cpus:
     type: integer
     default: 4
     description: Actual number of CPUs allocated to the node instance 
-`, 'test_attributes' ).errors).toEqual([]) });
+`, 'attributes' ) instanceof classes.ToscaAttributes).toEqual(true) });
 
 
 	it("The compiler should not accept attribute with constraints",
-		function() { expect( app.parse_syntax(`
-attributes:
+		function() { expect( app.parse_string(`
   actual_cpus:
     type: integer
     description: Number of CPUs requested for a software node instance
     default: 1
     constraints:
       - equal: 1
-`, 'test_attributes' ).errors[0].text).toContain("extraneous input 'constraints'") });
+`, 'attributes' ) instanceof classes.ToscaAttributes).toEqual(false) });
 
 	it("The compiler should accept a attribute with a correct status",
-		function() { expect( app.parse_syntax(`
-attributes:
+		function() { expect( app.parse_string(`
   names:
     type: list
     entry_schema: string
     status: experimental
     description: A list of names 
-`, 'test_attributes' ).errors).toEqual([]) });
+`, 'attributes' ) instanceof classes.ToscaAttributes).toEqual(true) });
 
 	it("The compiler should accept attribute of type 'list with constraints'",
-		function() { expect( app.parse_syntax(`
-attributes:
+		function() { expect( app.parse_string(`
   list1:
     type: list
     entry_schema:
@@ -96,11 +90,10 @@ attributes:
       - 3
       - 4
     description: Number of CPUs requested for a software node instance
-`, 'test_attributes' ).errors).toEqual([]) });
+`, 'attributes' ) instanceof classes.ToscaAttributes).toEqual(true) });
 
 	it("The compiler should accept a attribute with complex type, status and default value",
-		function() { expect( app.parse_syntax(`
-attributes:
+		function() { expect( app.parse_string(`
   list_of_names:
     type: list
     default:
@@ -114,21 +107,19 @@ attributes:
         - min_length: 4
         - max_length: 10
     status: experimental
-`, 'test_attributes' ).errors).toEqual([]) });
+`, 'attributes' ) instanceof classes.ToscaAttributes).toEqual(true) });
 
 	it("The compiler should not accept a attribute with bad status",
-		function() { expect( app.parse_syntax(`
-attributes:
+		function() { expect( app.parse_string(`
   list_of_names:
       type: list
       entry_schema: string
       status: experiment
       description: A list of names
-`, 'test_attributes' ).errors[0].text).toContain("failed predicate") });
+`, 'attributes' ) instanceof classes.ToscaAttributes).toEqual(false) });
 
 	it("The compiler should accept multiple attributes",
-		function() { expect( app.parse_syntax(`
-attributes:
+		function() { expect( app.parse_string(`
     names:
       type: list
       entry_schema: string
@@ -137,12 +128,11 @@ attributes:
     num_cpus:
       type: integer
       description: Actual number of CPUs allocated to the node instance
-`, 'test_attributes' ).errors).toEqual([]) });
+`, 'attributes' ) instanceof classes.ToscaAttributes).toEqual(true) });
 
 
 	it("The compiler should accept multiple complex attributes",
-		function() { expect( app.parse_syntax(`
-attributes:
+		function() { expect( app.parse_string(`
     names:
       type: list
       entry_schema: string
@@ -180,11 +170,10 @@ attributes:
         deux: pouet
         trois: pouet
         quatre: tsointsoin
-`, 'test_attributes' ).errors).toEqual([]) });
+`, 'attributes' ) instanceof classes.ToscaAttributes).toEqual(true) });
 
 	it("The compiler should accept attribute with multi-level complex type and default ",
-		function() { expect( app.parse_syntax(`
-attributes:
+		function() { expect( app.parse_string(`
   complexcollection:
     type: list
     entry_schema:
@@ -210,7 +199,7 @@ attributes:
           - en bas
         personnes:
           - lea.sambe
-`, 'test_attributes' ).errors).toEqual([]) });	
+`, 'attributes' ) instanceof classes.ToscaAttributes).toEqual(true) });	
 
   });
 
