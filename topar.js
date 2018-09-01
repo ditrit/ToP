@@ -7,6 +7,11 @@ const ToscaTypes = require("./ToscaTypes.js")
 const tosca_definitions = 'tosca_definitions';  
 
 var _errors=[]
+var debug=false
+
+function set_debug(dbg) {
+  debug = dbg
+}
 
 //var _ = require('lodash');
 
@@ -161,7 +166,9 @@ function getFromPath(input, path, isin, isnotin) {
 
 function toscaFactoryRef(input, ref, tosca_version) {
   if (!ref) return null;
-  return toscaFactory(input.data, _factory[tosca_version][ref], tosca_version)[0]
+  debugger
+  let data = toscaFactory(input.data, _factory[tosca_version][ref], tosca_version)
+  return (data.length == 1) ? { data: data[0].data, keys: input.keys } : null
 }
 
 function toscaFactoryAnyOf(input, anyOf, tosca_version) {
@@ -188,7 +195,7 @@ function toscaFactoryItems(input, items, tosca_version) {
     }
     return { data: data_list, keys: {} }
   } else {
-    _errors.push(`Syntax error: input should be a list (${input})`)
+    _errors.push(`Syntax error: input should be a list (${JSON.stringify(input)}, null,2))`)
     return null
   }
 }
@@ -261,7 +268,7 @@ function buildToscaAst(ast, schema_name, version, filename) {
 
 function parse_file(filename, schema_name=null, version=null) {
   let input = fs.readFileSync(filename, 'UTF-8');
-  return parse(input,  filename, schema_name, version);
+  return parse(input,  filename, schema_name, version, dbg);
 }
 
 function parse_string(input, schema_name=null, version=null) {
@@ -283,3 +290,4 @@ function parse(input, filename, schema_name, version) {
 
 exports.parse_file=parse_file
 exports.parse_string=parse_string
+exports.set_debug=set_debug

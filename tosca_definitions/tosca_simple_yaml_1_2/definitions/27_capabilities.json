@@ -21,6 +21,19 @@
     }
   },
 
+  "occurrences": {
+    "schema": {
+      "$id": "http://ditrit.io/schemas/occurrences",
+      "instanceof": "Sequence"
+    },
+    "factory": { 
+      "path": "/", 
+      "type": "ToscaRange",
+      "items": { "anyOf": [ { "type": "ToscaInteger", "path": "/"}, 
+                            { "type": "ToscaUnbounded", "path": "/" } ] } 
+    }
+  },
+
   "capability_defs": {
     "schema": {
       "$id": "http://ditrit.io/schemas/capability_defs",
@@ -34,15 +47,33 @@
               "valid_source_types": {
                 "listItems": { "instanceofyaml": "str" }
               },
-              "occurrences":  { "instanceof": "Sequence" }
+              "occurrences":  { "$ref": "occurrences" }
             }
           },
           { "instanceofyaml": "str"}
         ]
       }
     },
-    "ast": {
-      
+    "factory": {
+      "type": "ToscaCapabilityDefs",
+      "args": {
+        "@id": {
+          "path": "/@id",
+          "type": "ToscaCapabilityDef",
+          "anyOf": [
+            { "type": "ToscaStr", "path": "/" },
+            { "args": {
+                "type": { "type": "ToscaStr", "path": "/type" },
+                "description": { "ref": "description", "path": "/description" },
+                "properties":  { "ref": "properties",  "path": "/properties" },
+                "atributes":   { "ref": "attributes",  "path": "/attributes"},
+                "valid_source_types": { "path": "/valid_source_types", "items": { "type": "ToscaStr" } },
+                "occurrences": { "ref": "occurrences", "path": "/occurrences" }
+              }
+            }
+          ]
+        }
+      }
     }
   },
 

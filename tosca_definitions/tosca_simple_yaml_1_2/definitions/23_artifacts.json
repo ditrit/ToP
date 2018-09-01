@@ -2,17 +2,32 @@
   "artifact_def": {
     "schema": {
       "$id": "http://ditrit.io/schemas/artifact_def",
-      "dictRequired": [ "type", "file"],
-      "dictProperties": {
-        "type": { "instanceofyaml": "str" },
-        "file": { "instanceofyaml": "str" },
-        "repository": { "instanceofyaml": "str" },
-        "description": { "$ref": "description" },
-        "deploy_path": { "instanceofyaml": "str"}
-      }
+      "anyOf": [
+        { "instanceofyaml": "str"},
+        { "dictRequired": [ "type", "file"],
+          "dictProperties": {
+            "type": { "instanceofyaml": "str" },
+            "file": { "instanceofyaml": "str" },
+            "repository": { "instanceofyaml": "str" },
+            "description": { "$ref": "description" },
+            "deploy_path": { "instanceofyaml": "str"}
+          }
+        }
+      ]
     },
-    "ast": {
-
+    "factory": {
+      "type": "ToscaArtifactDef",
+      "anyOf": [
+        { "args": {
+            "type":         { "type": "ToscaStr",     "path": "/type" },
+            "file":         { "type": "ToscaPath",     "path": "/file" },
+            "repository":   { "type": "ToscaStr",     "path": "/repository" },
+            "description":  { "ref":  "description",  "path": "/description" }, 
+            "deploy_path":  { "type": "ToscaPath",     "path": "/deploy_path" }
+          }
+        },
+        { "type": "ToscaPath", "path": "/" }
+      ]
     }
   },
 
@@ -21,8 +36,14 @@
       "$id": "http://ditrit.io/schemas/artifact_defs",
       "dictIdsDefinition": { "$ref": "artifact_def"}
     },
-    "ast": {
-
+    "factory": {
+      "type": "ToscaArtifactDefs",
+      "args": { 
+        "@id": { 
+          "path": "/@id", 
+          "ref": "artifact_def" 
+        } 
+      }
     }
   },
   

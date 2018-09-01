@@ -1,22 +1,27 @@
+const path = require("path")
+
 
 exports=module.exports={};
 
 class ToscaAst {
   constructor(args, context) {
-    if (args && args.data ) {
-      this.context = context
-      this.tag = args.data.tag
-      if (!this.tag) this.tag = ""
-      this.val = args.data.val 
-    } else
-      throw Error(`Syntax error : no value found`);
+    if (context) { 
+      if (args && args.data ) {
+        this.context = context
+        this.tag = args.data.tag
+        if (!this.tag) this.tag = ""
+        this.val = args.data.val 
+      } else throw Error(`Syntax error : no value found`);
+    }
   }
 }
 
 class ToscaStr extends ToscaAst {
   constructor(args, context) {
   	super(args, args.data)
-    if (!this.tag.endsWith(':str') )
+    if (!context && typeof(args) == 'string')
+      this.val = args
+    else if (!this.tag.endsWith(':str') ) 
       throw Error(`Syntax error : ${args.data} is not a string`);
   }
 }
@@ -37,6 +42,15 @@ class ToscaURL extends ToscaStr {
   }
 }
 
+class ToscaPath extends ToscaStr {
+  constructor(args, context) {
+    super(args, context)
+
+    this.path = path.parse(path.normalize(args.data.val))
+  }
+
+}
+
 class ToscaBool extends ToscaAst {
   constructor(args, context) {
     super(args, args.data)
@@ -48,6 +62,7 @@ class ToscaBool extends ToscaAst {
 class ToscaInteger extends ToscaAst {
   constructor(args, context) {
     super(args, args.data)
+    this.val = parseInt(this.val)
     if (!this.tag.endsWith(':int') )
       throw Error(`Syntax error : ${args.data} is not an integer`);
   }
@@ -56,6 +71,7 @@ class ToscaInteger extends ToscaAst {
 class ToscaFloat extends ToscaAst {
   constructor(args, context) {
     super(args, args.data)
+    this.val = parseFloat(this.val)
     if (!this.tag.endsWith(':float') )
       throw Error(`Syntax error : ${args.data} is not a float`);
   }
@@ -92,6 +108,25 @@ class ToscaVersion extends ToscaAst {
   }
 }
 
+class ToscaUnbounded extends ToscaStr {
+  constructor(args, context) {
+    super(args, context)
+    if (this.val != "UNBOUNDED")
+      throw Error(`Syntax error : ${args.data} is not an UNBOUNDED value`);     
+  } 
+}
+
+class ToscaRange extends ToscaAst {
+  constructor(args, context) {
+    super(args, context)
+    if (args.data instanceof Array && args.data.length == 2) {
+      this.min = args.data[0]
+      this.max = args.data[1]
+    } else 
+      throw Error(`Syntax error : ${args.data} is not an array of 2 items`);
+  }
+}
+
 class ToscaNull extends ToscaAst {
   constructor(args, context)  {
     super({data: null}, null)
@@ -125,7 +160,6 @@ class ToscaMetadata extends ToscaAst {
 
 class ToscaRepository extends ToscaAst {
   constructor(args, context)  {
-    debugger
     super(args, context)
   	if (this.tag.endsWith(":str")) {
   		this.url = new ToscaURL(args, context) 
@@ -263,7 +297,6 @@ class ToscaConstraintSchema extends ToscaConstraint {
 class ToscaTypeDef extends ToscaAst {
 
   constructor(args, context) {
-    debugger
     super(args, context)
     if (!(args.data instanceof Object)) 
       throw Error(`Syntax error : no valid data type`);
@@ -292,7 +325,6 @@ class ToscaParameter extends ToscaAst {
 
 class ToscaAttributes extends ToscaAst {
   constructor(args, context) {
-    debugger
     super(args, context)
     this.ids = args.data
   }
@@ -300,14 +332,12 @@ class ToscaAttributes extends ToscaAst {
 
 class ToscaAttribute extends ToscaParameter {
   constructor(args, context) {
-    debugger
     super(args, context)
   }
 }
 
 class ToscaProperties extends ToscaAst {
   constructor(args, context) {
-    debugger
     super(args, context)
     this.ids = args.data
   }
@@ -315,7 +345,6 @@ class ToscaProperties extends ToscaAst {
 
 class ToscaProperty extends ToscaParameter {
   constructor(args, context) {
-    debugger
     super(args, context)
     this.constraints =  args.data.constraints
     this.required =     args.data.required
@@ -325,7 +354,6 @@ class ToscaProperty extends ToscaParameter {
 
 class ToscaInputs extends ToscaAst {
   constructor(args, context) {
-    debugger
     super(args, context)
     this.ids = args.data
   }
@@ -333,7 +361,6 @@ class ToscaInputs extends ToscaAst {
 
 class ToscaInput extends ToscaParameter {
   constructor(args, context) {
-    debugger
     super(args, context)
     this.constraints =  args.data.constraints
     this.required =     args.data.required
@@ -343,7 +370,6 @@ class ToscaInput extends ToscaParameter {
 
 class ToscaOutputs extends ToscaAst {
   constructor(args, context) {
-    debugger
     super(args, context)
     this.ids = args.data
   }
@@ -351,7 +377,6 @@ class ToscaOutputs extends ToscaAst {
 
 class ToscaOutput extends ToscaParameter {
   constructor(args, context) {
-    debugger
     super(args, context)
     this.constraints =  args.data.constraints
     this.required =     args.data.required
@@ -359,14 +384,76 @@ class ToscaOutput extends ToscaParameter {
   }  
 }
 
+class ToscaArtifactDefs extends ToscaAst {
+  constructor(args, context) {
+    super(args, context)
+    this.ids = args.data
+  }
+}
+
+class ToscaArtifactDef extends ToscaAst {
+  constructor(args, context) {
+    super(args, context)
+
+    if (!(args.data instanceof Object)) 
+      throw Error(`Syntax error : no valid ArtifactDef value`);
+    if (args.data instanceof ToscaStr) {
+      this.type = new ToscaStr("file")
+      this.file = args.data
+    } else if (!(args.data.type instanceof ToscaStr && args.data.file instanceof ToscaPath)) {
+        throw Error(`Syntax error : a data type must have valid 'type' and 'file' values`)
+    } else {
+      this.type = args.data.type
+      this.file = args.data.file
+      this.repository  = args.data.repository
+      this.description = args.data.description
+      this.deploy_path = args.data.deploy_path
+    }
+  }
+}
+
+class ToscaCapabilityDefs extends ToscaAst {
+  constructor(args, context) {
+    super(args, context)
+    this.ids = args.data
+  }
+}
+
+class ToscaCapabilityDef extends ToscaAst {
+  constructor(args, context) {
+    super(args, context)
+    if (!(args.data instanceof Object)) 
+      throw Error(`Syntax error : no valid CapabilityDef value`);
+    if (args.data instanceof ToscaStr) {
+      this.type = new ToscaStr("file")
+      this.file = args.data
+    } else if (!(args.data.type instanceof ToscaStr)) {
+        throw Error(`Syntax error : a data type must have valid 'type'`)
+    } else {
+      this.type = args.data.type
+      this.file = args.data.file
+      this.repository  = args.data.repositoryRange
+      this.description = args.data.description
+      this.properties = args.data.properties
+      this.attributes = args.data.attributes
+      this.valid_source_types = args.data.valid_source_types
+      this.occurrences = args.data.occurrences
+    }
+  }
+}
+
+
 const classes = {
   ToscaAst,
   ToscaStr,
   ToscaURL,
+  ToscaPath,
   ToscaBool,
   ToscaInteger,
   ToscaFloat,
   ToscaVersion,
+  ToscaUnbounded,
+  ToscaRange,
   ToscaTimestamp,
   ToscaNull,
   ToscaServiceTemplate,
@@ -398,7 +485,10 @@ const classes = {
   ToscaInputs,
   ToscaOutput,
   ToscaOutputs,
-  
+  ToscaArtifactDef,
+  ToscaArtifactDefs,
+  ToscaCapabilityDef,
+  ToscaCapabilityDefs
 };
 
 class DynamicClass {

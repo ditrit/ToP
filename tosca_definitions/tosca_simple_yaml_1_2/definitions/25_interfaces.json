@@ -25,8 +25,22 @@
         }
       ]
     },
-    "ast": {
-
+    "factory": {
+      "type": "ToscaImplementation",
+      "anyOf": [
+        { "type": "ToscaStr", "path": "/" },
+        { "args": { 
+            "primary":      { "path": "/primary", "anyOf": [
+                { "type": "ToscaStr",     "path": "/" },
+                { "ref":  "artifact_def", "path": "/" } ]
+            },
+            "dependencies": { "path": "/primary", "anyOf": [
+                { "type": "ToscaStr",     "path": "/" },
+                { "ref":  "artifact_def", "path": "/" } ]              
+            }
+          }
+        }
+      ]
     }
   },
 
@@ -37,10 +51,15 @@
         "description":    { "$ref": "description" },
         "inputs":         { "$ref": "properties" },
         "implementation": { "$ref": "implementation" } 
-      }
+      } 
     },
-    "ast": {
-
+    "factory": {
+      "type": "ToscaOperationDef",
+      "args": {
+        "description":    { "ref": "description", "path": "/description" },
+        "inputs":         { "ref": "properties",     "path": "/inputs" },
+        "implementation": { "ref": "implementation", "path": "/implementation" }
+      }
     }
   },
 
@@ -89,7 +108,20 @@
         "dictAdditionalProperties": { "$ref": "operation_def" }
       }
     },
-    "ast": {
+    "factory": {
+      "type": "ToscaInterfaceDefs",
+      "args": {
+        "@id": { 
+          "path": "/@id", 
+          "type": "ToscaInterfaceDef",
+          "args": {
+            "type": { "type": "ToscaStr", "path": "/type" },
+            "inputs": { "ref": "properties", "path": "/inputs" },
+            "@other": { "ref": "operation_def", "path": "/@other", 
+                        "isnotin": [ "type", "inputs" ] }
+          }
+        }
+      }
 
     }
   },
@@ -108,6 +140,5 @@
 
     }
   }
-
 
 }

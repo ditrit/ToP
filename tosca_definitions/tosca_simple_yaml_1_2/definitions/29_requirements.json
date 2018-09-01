@@ -11,7 +11,7 @@
                 "capability":       { "instanceofyaml": "str" },
                 "description":      { "$ref": "description" },
                 "node":             { "instanceofyaml": "str" },
-                "occurrences":       { "instanceof": "Sequence" },
+                "occurrences":      { "$ref": "occurrences" },
                 "relationship":     {
                   "anyOf": [ 
                     { "instanceofyaml": "str" },
@@ -28,8 +28,37 @@
         ]
       }
     },
-    "ast": {
-
+    "factory": {
+      "type": "ToscaRequirementDefs",
+      "items": {
+        "type": "ToscaRequirementDef",
+        "args": {
+          "@id": { 
+            "path": "/@id", 
+            "anyOf": [
+              { "args": { "capability": { "type": "ToscaStr", "path": "/" } }},
+              { "args": {
+                  "capability": { "type": "ToscaStr", "path": "/capability" },
+                  "description":  { "ref": "description", "path": "/description" },
+                  "node": { "type": "ToscaStr", "path": "/node" },
+                  "occurrences": { "ref": "occurrences", "path": "/occurrences"},
+                  "relationship": {
+                    "type": "ToscaRelationshipDef",
+                    "anyOf": [
+                      { "type": "ToscaStr", "path": "/" },
+                      { "args": { 
+                          "type": { "type": "ToscaStr", "path": "/type" },
+                          "interfaces": { "ref": "interface_defs" }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
     }
   },
 
@@ -60,7 +89,6 @@
             }
           }
         ]
-  
       }
     },
     "ast": {
